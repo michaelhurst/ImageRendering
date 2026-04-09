@@ -1,0 +1,5 @@
+node_modules/
+tests/baselines/
+tests/image-render.spec.js-snapshots/
+playwright-report/
+test-results/

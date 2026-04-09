@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Image Rendering Test</title>
+  <style>
+    body { margin: 0; background: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    img { max-width: 600px; max-height: 400px; }
+  </style>
+</head>
+<body>
+  <img id="test-image" src="" alt="Test image" />
+  <script>
+    const src = new URLSearchParams(window.location.search).get('src');
+    if (src) document.getElementById('test-image').src = src;
+  </script>
+</body>
+</html>
