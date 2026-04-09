@@ -43,6 +43,26 @@ npx playwright test --headed
 
 ## What the tests check
 
+### Image Render Tests (`tests/image-render.spec.js`)
+
 For each of the 13 viewport sizes:
 - `image renders and is visible` — confirms the candidate image loads without errors
 - `candidate matches baseline` — compares a screenshot of the candidate against the saved baseline screenshot pixel-by-pixel
+
+Run just this test:
+```bash
+npx playwright test tests/image-render.spec.js
+```
+
+> The first run captures baseline screenshots from `smugmug.com` and saves them to `tests/baselines/`. Run a second time to do the actual pixel comparison against the `inside.smugmug.net` candidate.
+
+### EXIF Comparison Test (`tests/exif-compare.spec.js`)
+
+Fetches both images directly and compares all EXIF metadata fields between `smugmug.com` and `inside.smugmug.net`.
+
+Run just this test:
+```bash
+npx playwright test tests/exif-compare.spec.js
+```
+
+No browser or local server is needed — it fetches the images over HTTPS directly. EXIF data for both images is printed to the console on each run.
