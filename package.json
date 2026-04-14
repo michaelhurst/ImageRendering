@@ -1,0 +1,27 @@
+{
+  "name": "smugmug-image-display-tests",
+  "version": "1.0.0",
+  "description": "Playwright tests for SmugMug image display quality, color accuracy, sizing, orientation, and metadata",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:quality": "npx playwright test tests/image-quality.spec.ts",
+    "test:color": "npx playwright test tests/color-accuracy.spec.ts",
+    "test:sizing": "npx playwright test tests/image-sizing.spec.ts",
+    "test:orientation": "npx playwright test tests/exif-orientation.spec.ts",
+    "test:metadata-preservation": "npx playwright test tests/metadata-preservation.spec.ts",
+    "test:metadata-display": "npx playwright test tests/metadata-display.spec.ts",
+    "test:metadata-api": "npx playwright test tests/metadata-api.spec.ts",
+    "test:poi": "npx playwright test tests/point-of-interest.spec.ts",
+    "test:watermark": "npx playwright test tests/watermark.spec.ts",
+    "test:resolution-cap": "npx playwright test tests/resolution-cap.spec.ts",
+    "test:report": "npx playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.45.0",
+    "sharp": "^0.33.0",
+    "exifr": "^7.1.3",
+    "pixelmatch": "^6.0.0",
+    "pngjs": "^7.0.0",
+    "dotenv": "^16.4.0"
+  }
+}
