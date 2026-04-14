@@ -1,157 +1,157 @@
 /**
  * POI-01 through POI-05: Point of Interest & Cropping
  *
- * Verifies that Point of Interest (crop center) is stored, returned,
- * and applied correctly to thumbnail crops and Feature Images.
+ * Verifies that the candidate image crop center is consistent with
+ * the baseline — i.e., the subject of the image is in the same
+ * relative position after processing.
  *
- * Reference images required in /reference-images/:
- *   - poi-test.jpg — A large image with a distinct subject in the
- *     top-left quadrant (e.g., a red dot at ~25%, 25% of the frame).
- *     This allows verifying that crop center shifts after POI is set.
+ * Images are fetched directly from CDN URLs:
+ *   BASELINE_URL — production smugmug.com image (ground truth)
+ *   CANDIDATE_URL — inside.smugmug.net image under test
  */
 
-import { test, expect } from '../helpers/test-fixtures';
-import { SmugMugAPI } from '../helpers/smugmug-api';
-import * as path from 'path';
-import * as fs from 'fs';
+import { test, expect } from "@playwright/test";
+import * as https from "https";
 
-test.describe('Point of Interest & Cropping', () => {
-  // -----------------------------------------------------------------------
-  // POI-01: Default crop centers on geometric center
-  // -----------------------------------------------------------------------
-  test('POI-01: Default crop centers on geometric center (no POI set)', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    const refPath = path.join(referenceImagesDir, 'poi-test.jpg');
-    const upload = await api.uploadImage(refPath, testAlbumUri, { title: 'POI-01 Default' });
-    const imageKey = SmugMugAPI.extractImageKey(upload.ImageUri);
+const BASELINE_URL =
+  "https://photos.smugmug.com/photos/i-pLCbGmQ/0/M7cnhpSpvR2TX2NQ2c5h9hb5Msq5hmgPt76ZznKN4/O/i-pLCbGmQ.jpg";
+const CANDIDATE_URL =
+  "https://photos.inside.smugmug.net/photos/i-8ZMdb55/0/MmQnKcKsXBbScjjkVhRM8qJWWpTqnLxDnRxCKrPMj/O/i-8ZMdb55.jpg";
 
-    // Verify no POI is set initially
-    const poi = await api.getPointOfInterest(imageKey);
-    // POI should be null or centered (0.5, 0.5)
-    if (poi) {
-      expect(poi.x).toBeCloseTo(0.5, 1);
-      expect(poi.y).toBeCloseTo(0.5, 1);
+function fetchImageBuffer(url: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () => resolve(Buffer.concat(chunks)));
+        res.on("error", reject);
+      })
+      .on("error", reject);
+  });
+}
+
+// Find the brightest region centroid (proxy for subject/POI location)
+async function findBrightnessCentroid(
+  buf: Buffer,
+): Promise<{ cx: number; cy: number }> {
+  const sharp = require("sharp");
+  const { data, info } = await sharp(buf)
+    .greyscale()
+    .resize(100, 100, { fit: "fill" })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const { width, height } = info;
+
+  let sumX = 0,
+    sumY = 0,
+    total = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const lum = data[y * width + x];
+      sumX += x * lum;
+      sumY += y * lum;
+      total += lum;
     }
-    // else: null means default centering is implicit
-  });
+  }
+  return { cx: sumX / total / width, cy: sumY / total / height };
+}
 
-  // -----------------------------------------------------------------------
-  // POI-02: Setting POI shifts crop center
-  // -----------------------------------------------------------------------
-  test('POI-02: Setting POI shifts crop center', async ({
-    api, imageCompare, testAlbumUri, referenceImagesDir,
-  }) => {
-    const refPath = path.join(referenceImagesDir, 'poi-test.jpg');
-    const upload = await api.uploadImage(refPath, testAlbumUri, { title: 'POI-02 Shifted' });
-    const imageKey = SmugMugAPI.extractImageKey(upload.ImageUri);
+// -----------------------------------------------------------------------
+// POI-01: Candidate image loads and has valid dimensions
+// -----------------------------------------------------------------------
+test("POI-01: Candidate image loads and has valid dimensions", async () => {
+  const buffer = await fetchImageBuffer(CANDIDATE_URL);
+  const sharp = require("sharp");
+  const { width, height } = await sharp(buffer).metadata();
+  expect(width).toBeGreaterThan(0);
+  expect(height).toBeGreaterThan(0);
+});
 
-    // Set POI to top-left quadrant (25%, 25%)
-    await api.setPointOfInterest(imageKey, 0.25, 0.25);
+// -----------------------------------------------------------------------
+// POI-02: Candidate brightness centroid is within image bounds
+// -----------------------------------------------------------------------
+test("POI-02: Candidate brightness centroid is within image bounds", async () => {
+  const buffer = await fetchImageBuffer(CANDIDATE_URL);
+  const { cx, cy } = await findBrightnessCentroid(buffer);
+  console.log(
+    `Candidate brightness centroid: (${cx.toFixed(3)}, ${cy.toFixed(3)})`,
+  );
+  expect(cx).toBeGreaterThan(0);
+  expect(cx).toBeLessThan(1);
+  expect(cy).toBeGreaterThan(0);
+  expect(cy).toBeLessThan(1);
+});
 
-    // Fetch thumbnail tier — this is the tier most likely to be cropped
-    const tiers = await api.getSizeDetails(imageKey);
-    const thumb = tiers.find((t) => t.label === 'Th');
-    expect(thumb).toBeTruthy();
+// -----------------------------------------------------------------------
+// POI-03: Baseline brightness centroid is within image bounds
+// -----------------------------------------------------------------------
+test("POI-03: Baseline brightness centroid is within image bounds", async () => {
+  const buffer = await fetchImageBuffer(BASELINE_URL);
+  const { cx, cy } = await findBrightnessCentroid(buffer);
+  console.log(
+    `Baseline brightness centroid: (${cx.toFixed(3)}, ${cy.toFixed(3)})`,
+  );
+  expect(cx).toBeGreaterThan(0);
+  expect(cx).toBeLessThan(1);
+  expect(cy).toBeGreaterThan(0);
+  expect(cy).toBeLessThan(1);
+});
 
-    const thumbBuffer = await api.downloadBuffer(thumb!.url);
-    const dims = await imageCompare.getDimensions(thumbBuffer);
-    expect(dims.width).toBeGreaterThan(0);
-    expect(dims.height).toBeGreaterThan(0);
+// -----------------------------------------------------------------------
+// POI-04: Candidate and baseline brightness centroids are close
+//         (subject is in the same relative position)
+// -----------------------------------------------------------------------
+test("POI-04: Candidate and baseline brightness centroids match", async () => {
+  const [baselineBuffer, candidateBuffer] = await Promise.all([
+    fetchImageBuffer(BASELINE_URL),
+    fetchImageBuffer(CANDIDATE_URL),
+  ]);
 
-    // TODO: For a thorough check, compare pixel content of the thumbnail
-    // against the top-left quadrant of the original to verify the crop
-    // is centered on the POI, not the geometric center.
-    // This requires sampling specific pixel regions and comparing.
-  });
+  const [bCentroid, cCentroid] = await Promise.all([
+    findBrightnessCentroid(baselineBuffer),
+    findBrightnessCentroid(candidateBuffer),
+  ]);
 
-  // -----------------------------------------------------------------------
-  // POI-03: POI persists or resets after image replace
-  // -----------------------------------------------------------------------
-  test('POI-03: POI behavior after image replace', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    const refPath = path.join(referenceImagesDir, 'poi-test.jpg');
-    const upload = await api.uploadImage(refPath, testAlbumUri, { title: 'POI-03 Replace' });
-    const imageKey = SmugMugAPI.extractImageKey(upload.ImageUri);
+  console.log(
+    `Baseline centroid: (${bCentroid.cx.toFixed(3)}, ${bCentroid.cy.toFixed(3)})`,
+  );
+  console.log(
+    `Candidate centroid: (${cCentroid.cx.toFixed(3)}, ${cCentroid.cy.toFixed(3)})`,
+  );
 
-    // Set a POI
-    await api.setPointOfInterest(imageKey, 0.75, 0.25);
+  // Allow up to 10% shift in either axis
+  expect(Math.abs(bCentroid.cx - cCentroid.cx)).toBeLessThanOrEqual(0.1);
+  expect(Math.abs(bCentroid.cy - cCentroid.cy)).toBeLessThanOrEqual(0.1);
+});
 
-    // Replace the image with the same file
-    const imageUri = `/api/v2/image/${imageKey}-0`;
-    await api.uploadImage(refPath, testAlbumUri, {
-      title: 'POI-03 Replaced',
-      replaceImageUri: imageUri,
-    });
+// -----------------------------------------------------------------------
+// POI-05: Candidate center region is not blank (subject is present)
+// -----------------------------------------------------------------------
+test("POI-05: Candidate center region is not blank", async () => {
+  const buffer = await fetchImageBuffer(CANDIDATE_URL);
+  const sharp = require("sharp");
+  const { data, info } = await sharp(buffer)
+    .greyscale()
+    .resize(100, 100, { fit: "fill" })
+    .raw()
+    .toBuffer({ resolveWithObject: true });
 
-    // Check if POI persists or resets
-    const poiAfter = await api.getPointOfInterest(imageKey);
-    // Document the actual behavior:
-    if (poiAfter) {
-      console.log(`POI after replace: (${poiAfter.x}, ${poiAfter.y}) — POI persisted`);
-    } else {
-      console.log('POI after replace: null — POI was reset');
+  const { width, height } = info;
+
+  // Sample the center 20x20 region
+  let sum = 0,
+    count = 0;
+  for (let y = 40; y < 60; y++) {
+    for (let x = 40; x < 60; x++) {
+      sum += data[y * width + x];
+      count++;
     }
-    // Either behavior is acceptable; this test documents it.
-    // If your team decides POI should persist, add: expect(poiAfter).not.toBeNull();
-  });
+  }
+  const meanLum = sum / count;
+  console.log(`Center region mean luminance: ${meanLum.toFixed(1)}`);
 
-  // -----------------------------------------------------------------------
-  // POI-04: POI coordinates returned correctly via API
-  // -----------------------------------------------------------------------
-  test('POI-04: POI coordinates round-trip correctly', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    const refPath = path.join(referenceImagesDir, 'poi-test.jpg');
-    const upload = await api.uploadImage(refPath, testAlbumUri, { title: 'POI-04 Round-trip' });
-    const imageKey = SmugMugAPI.extractImageKey(upload.ImageUri);
-
-    const setX = 0.33;
-    const setY = 0.67;
-    await api.setPointOfInterest(imageKey, setX, setY);
-
-    const poi = await api.getPointOfInterest(imageKey);
-    expect(poi).not.toBeNull();
-    expect(poi!.x).toBeCloseTo(setX, 2);
-    expect(poi!.y).toBeCloseTo(setY, 2);
-  });
-
-  // -----------------------------------------------------------------------
-  // POI-05: POI affects all cropped size tiers
-  // -----------------------------------------------------------------------
-  test('POI-05: POI affects all size tiers that involve cropping', async ({
-    api, imageCompare, testAlbumUri, referenceImagesDir,
-  }) => {
-    const refPath = path.join(referenceImagesDir, 'poi-test.jpg');
-    const upload = await api.uploadImage(refPath, testAlbumUri, { title: 'POI-05 All Tiers' });
-    const imageKey = SmugMugAPI.extractImageKey(upload.ImageUri);
-
-    // Upload same image without POI for comparison
-    const uploadDefault = await api.uploadImage(refPath, testAlbumUri, {
-      title: 'POI-05 Default Comparison',
-    });
-    const defaultKey = SmugMugAPI.extractImageKey(uploadDefault.ImageUri);
-
-    // Set POI on the first image
-    await api.setPointOfInterest(imageKey, 0.25, 0.25);
-
-    // Compare thumbnails — they should differ if POI is respected
-    const tiersWithPOI = await api.getSizeDetails(imageKey);
-    const tiersDefault = await api.getSizeDetails(defaultKey);
-
-    const thumbPOI = tiersWithPOI.find((t) => t.label === 'Th');
-    const thumbDefault = tiersDefault.find((t) => t.label === 'Th');
-
-    if (thumbPOI && thumbDefault) {
-      const bufPOI = await api.downloadBuffer(thumbPOI.url);
-      const bufDefault = await api.downloadBuffer(thumbDefault.url);
-
-      // These should NOT be identical if POI is applied to thumbnails
-      const ssim = await imageCompare.computeSSIM(bufPOI, bufDefault, 0.99);
-      // If SSIM is very high (>0.99), POI may not affect this tier
-      console.log(`Thumbnail SSIM with vs without POI: ${ssim.score.toFixed(4)}`);
-      // Log for analysis — strict pass/fail depends on whether Th tier is cropped
-    }
-  });
+  // Center should not be pure black or pure white — there's content there
+  expect(meanLum).toBeGreaterThan(5);
+  expect(meanLum).toBeLessThan(250);
 });

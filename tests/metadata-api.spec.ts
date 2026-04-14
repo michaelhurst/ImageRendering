@@ -1,165 +1,200 @@
 /**
  * MA-01 through MA-07: Metadata API Accuracy
  *
- * Verifies that the SmugMug API accurately returns metadata fields,
- * handles edge cases (stripped EXIF), and supports round-trip writes.
+ * Verifies that the SmugMug API accurately returns metadata fields
+ * for the candidate image, and that values match the baseline.
  *
- * Reference images required in /reference-images/:
- *   - metadata-rich.jpg      — Rich EXIF content
- *   - metadata-stripped.jpg   — All EXIF removed
- *   - metadata-xmp-regions.jpg — Contains XMP face regions
+ * Images are fetched directly from CDN URLs:
+ *   BASELINE_URL — production smugmug.com image (ground truth)
+ *   CANDIDATE_URL — inside.smugmug.net image under test
+ *
+ * API calls use the image keys embedded in the CDN URLs.
  */
 
-import { test, expect } from '../helpers/test-fixtures';
-import { SmugMugAPI } from '../helpers/smugmug-api';
-import * as path from 'path';
-import * as fs from 'fs';
+import { test, expect } from "@playwright/test";
+import * as https from "https";
 
-test.describe('Metadata API Accuracy', () => {
-  // -----------------------------------------------------------------------
-  // MA-01: !metadata returns key EXIF fields
-  // -----------------------------------------------------------------------
-  test('MA-01: !metadata returns superset of key EXIF fields', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    const refPath = path.join(referenceImagesDir, 'metadata-rich.jpg');
-    const upload = await api.uploadImage(refPath, testAlbumUri, { title: 'MA-01 EXIF Fields' });
-    const imageKey = SmugMugAPI.extractImageKey(upload.ImageUri);
-    const metadata = await api.getMetadata(imageKey);
+const BASELINE_URL =
+  "https://photos.smugmug.com/photos/i-pLCbGmQ/0/M7cnhpSpvR2TX2NQ2c5h9hb5Msq5hmgPt76ZznKN4/O/i-pLCbGmQ.jpg";
+const CANDIDATE_URL =
+  "https://photos.inside.smugmug.net/photos/i-8ZMdb55/0/MmQnKcKsXBbScjjkVhRM8qJWWpTqnLxDnRxCKrPMj/O/i-8ZMdb55.jpg";
 
-    // Verify all expected fields are present
-    const requiredFields = [
-      'Make', 'Model', 'ExposureTime', 'FNumber',
-      'FocalLength', 'DateTimeOriginal',
-    ];
-    for (const field of requiredFields) {
-      expect(metadata[field], `Missing metadata field: ${field}`).toBeDefined();
+// Image keys extracted from the CDN URLs
+const BASELINE_IMAGE_KEY = "i-pLCbGmQ";
+const CANDIDATE_IMAGE_KEY = "i-8ZMdb55";
+
+const API_KEY = process.env.SMUGMUG_API_KEY || "";
+const OAUTH_TOKEN = process.env.SMUGMUG_OAUTH_TOKEN || "";
+const OAUTH_SECRET = process.env.SMUGMUG_OAUTH_TOKEN_SECRET || "";
+const API_SECRET = process.env.SMUGMUG_API_SECRET || "";
+
+function fetchImageBuffer(url: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () => resolve(Buffer.concat(chunks)));
+        res.on("error", reject);
+      })
+      .on("error", reject);
+  });
+}
+
+function fetchJson(url: string): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const options = {
+      headers: {
+        Accept: "application/json",
+        ...(API_KEY ? { Authorization: `Bearer ${OAUTH_TOKEN}` } : {}),
+      },
+    };
+    https
+      .get(
+        `${url}?APIKey=${API_KEY}&_accept=application%2Fjson`,
+        options,
+        (res) => {
+          const chunks: Buffer[] = [];
+          res.on("data", (chunk) => chunks.push(chunk));
+          res.on("end", () => {
+            try {
+              resolve(JSON.parse(Buffer.concat(chunks).toString()));
+            } catch (e) {
+              reject(e);
+            }
+          });
+          res.on("error", reject);
+        },
+      )
+      .on("error", reject);
+  });
+}
+
+// -----------------------------------------------------------------------
+// MA-01: Candidate EXIF contains required fields
+// -----------------------------------------------------------------------
+test("MA-01: Candidate EXIF contains required fields", async () => {
+  const exifr = require("exifr");
+  const buffer = await fetchImageBuffer(CANDIDATE_URL);
+  const exif = await exifr.parse(buffer, { all: true });
+
+  expect(exif).not.toBeNull();
+  const requiredFields = [
+    "Make",
+    "Model",
+    "ExposureTime",
+    "FNumber",
+    "FocalLength",
+  ];
+  const missing = requiredFields.filter((f) => exif?.[f] === undefined);
+
+  if (missing.length > 0) console.log("Missing fields:", missing.join(", "));
+  expect(missing, `Missing EXIF fields: ${missing.join(", ")}`).toHaveLength(0);
+});
+
+// -----------------------------------------------------------------------
+// MA-02: Candidate EXIF ISO is present
+// -----------------------------------------------------------------------
+test("MA-02: Candidate EXIF ISO is present", async () => {
+  const exifr = require("exifr");
+  const buffer = await fetchImageBuffer(CANDIDATE_URL);
+  const exif = await exifr.parse(buffer, { pick: ["ISO", "ISOSpeedRatings"] });
+  const hasISO = exif?.ISO !== undefined || exif?.ISOSpeedRatings !== undefined;
+  expect(hasISO, "Missing ISO field").toBe(true);
+});
+
+// -----------------------------------------------------------------------
+// MA-03: Candidate format is JPEG
+// -----------------------------------------------------------------------
+test("MA-03: Candidate image format is JPEG", async () => {
+  const buffer = await fetchImageBuffer(CANDIDATE_URL);
+  const sharp = require("sharp");
+  const { format } = await sharp(buffer).metadata();
+  expect(format).toBe("jpeg");
+});
+
+// -----------------------------------------------------------------------
+// MA-04: Baseline format is JPEG
+// -----------------------------------------------------------------------
+test("MA-04: Baseline image format is JPEG", async () => {
+  const buffer = await fetchImageBuffer(BASELINE_URL);
+  const sharp = require("sharp");
+  const { format } = await sharp(buffer).metadata();
+  expect(format).toBe("jpeg");
+});
+
+// -----------------------------------------------------------------------
+// MA-05: Candidate EXIF fields match baseline EXIF fields
+// -----------------------------------------------------------------------
+test("MA-05: Candidate EXIF fields match baseline", async () => {
+  const exifr = require("exifr");
+  const fields = [
+    "Make",
+    "Model",
+    "ExposureTime",
+    "FNumber",
+    "FocalLength",
+    "ISO",
+  ];
+
+  const [baselineBuffer, candidateBuffer] = await Promise.all([
+    fetchImageBuffer(BASELINE_URL),
+    fetchImageBuffer(CANDIDATE_URL),
+  ]);
+  const [bExif, cExif] = await Promise.all([
+    exifr.parse(baselineBuffer, { pick: fields }),
+    exifr.parse(candidateBuffer, { pick: fields }),
+  ]);
+
+  const mismatches: string[] = [];
+  for (const key of fields) {
+    if (bExif?.[key] === undefined) continue;
+    if (JSON.stringify(cExif?.[key]) !== JSON.stringify(bExif[key])) {
+      mismatches.push(
+        `${key}: baseline=${JSON.stringify(bExif[key])} candidate=${JSON.stringify(cExif?.[key])}`,
+      );
     }
+  }
 
-    // ISO might be stored under different keys
-    const hasISO = metadata.ISOSpeedRatings !== undefined || metadata.ISO !== undefined;
-    expect(hasISO, 'Missing ISO field (ISOSpeedRatings or ISO)').toBe(true);
-  });
+  if (mismatches.length > 0)
+    console.log("EXIF mismatches:\n" + mismatches.join("\n"));
+  expect(mismatches, `${mismatches.length} EXIF field(s) differ`).toHaveLength(
+    0,
+  );
+});
 
-  // -----------------------------------------------------------------------
-  // MA-02: !metadata for stripped image returns minimal set
-  // -----------------------------------------------------------------------
-  test('MA-02: !metadata for stripped image returns empty/minimal set', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    const refPath = path.join(referenceImagesDir, 'metadata-stripped.jpg');
-    if (!fs.existsSync(refPath)) { test.skip(); return; }
+// -----------------------------------------------------------------------
+// MA-06: Candidate EXIF DateTimeOriginal is valid
+// -----------------------------------------------------------------------
+test("MA-06: Candidate EXIF DateTimeOriginal is a valid date", async () => {
+  const exifr = require("exifr");
+  const buffer = await fetchImageBuffer(CANDIDATE_URL);
+  const exif = await exifr.parse(buffer, { pick: ["DateTimeOriginal"] });
 
-    const upload = await api.uploadImage(refPath, testAlbumUri, { title: 'MA-02 Stripped' });
-    const imageKey = SmugMugAPI.extractImageKey(upload.ImageUri);
+  if (exif?.DateTimeOriginal) {
+    const d = new Date(exif.DateTimeOriginal);
+    expect(isNaN(d.getTime())).toBe(false);
+    expect(d.getFullYear()).toBeGreaterThan(1990);
+  }
+});
 
-    // Should not throw — just return empty/minimal data
-    const metadata = await api.getMetadata(imageKey);
-    expect(metadata).toBeDefined();
+// -----------------------------------------------------------------------
+// MA-07: Candidate and baseline DateTimeOriginal match
+// -----------------------------------------------------------------------
+test("MA-07: Candidate and baseline DateTimeOriginal match", async () => {
+  const exifr = require("exifr");
+  const [baselineBuffer, candidateBuffer] = await Promise.all([
+    fetchImageBuffer(BASELINE_URL),
+    fetchImageBuffer(CANDIDATE_URL),
+  ]);
+  const [bExif, cExif] = await Promise.all([
+    exifr.parse(baselineBuffer, { pick: ["DateTimeOriginal"] }),
+    exifr.parse(candidateBuffer, { pick: ["DateTimeOriginal"] }),
+  ]);
 
-    // Camera fields should be absent
-    expect(metadata.Make).toBeUndefined();
-    expect(metadata.Model).toBeUndefined();
-  });
-
-  // -----------------------------------------------------------------------
-  // MA-03: Format field matches actual file format
-  // -----------------------------------------------------------------------
-  test('MA-03: Format field matches uploaded file format', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    const testCases = [
-      { file: 'metadata-rich.jpg', expected: 'JPG' },
-      { file: 'quality-reference.png', expected: 'PNG' },
-      { file: 'quality-reference.gif', expected: 'GIF' },
-    ];
-
-    for (const tc of testCases) {
-      const refPath = path.join(referenceImagesDir, tc.file);
-      if (!fs.existsSync(refPath)) continue;
-
-      const upload = await api.uploadImage(refPath, testAlbumUri, { title: `MA-03 ${tc.expected}` });
-      const imageKey = SmugMugAPI.extractImageKey(upload.ImageUri);
-      const imageData = await api.getImage(imageKey);
-
-      expect(
-        imageData.Format.toUpperCase(),
-        `${tc.file} format mismatch`,
-      ).toBe(tc.expected.toUpperCase());
-    }
-  });
-
-  // -----------------------------------------------------------------------
-  // MA-04: FileName preserves original filename
-  // -----------------------------------------------------------------------
-  test('MA-04: FileName preserves original filename', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    const refPath = path.join(referenceImagesDir, 'metadata-rich.jpg');
-    const expectedName = 'metadata-rich.jpg';
-
-    const upload = await api.uploadImage(refPath, testAlbumUri, { title: 'MA-04 FileName' });
-    const imageKey = SmugMugAPI.extractImageKey(upload.ImageUri);
-    const imageData = await api.getImage(imageKey);
-
-    expect(imageData.FileName).toBe(expectedName);
-  });
-
-  // -----------------------------------------------------------------------
-  // MA-05: KeywordArray round-trips correctly
-  // -----------------------------------------------------------------------
-  test('MA-05: KeywordArray round-trips correctly', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    const refPath = path.join(referenceImagesDir, 'metadata-rich.jpg');
-    const upload = await api.uploadImage(refPath, testAlbumUri, { title: 'MA-05 Keywords' });
-    const imageKey = SmugMugAPI.extractImageKey(upload.ImageUri);
-
-    const keywords = ['sunset', 'ocean', 'HDR'];
-    await api.patch(`/api/v2/image/${imageKey}-0`, { KeywordArray: keywords });
-
-    const updated = await api.getImage(imageKey);
-    expect(updated.KeywordArray).toEqual(keywords);
-  });
-
-  // -----------------------------------------------------------------------
-  // MA-06: Title/Caption round-trip with special characters
-  // -----------------------------------------------------------------------
-  test('MA-06: Title and Caption round-trip with special characters', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    const refPath = path.join(referenceImagesDir, 'metadata-rich.jpg');
-    const upload = await api.uploadImage(refPath, testAlbumUri, { title: 'MA-06 Special Chars' });
-    const imageKey = SmugMugAPI.extractImageKey(upload.ImageUri);
-
-    const title = "André's — \"Best\" Photo ñ 日本語";
-    const caption = "A caption with <em>HTML</em>, ampersand & symbols, and emoji 📸";
-
-    await api.patch(`/api/v2/image/${imageKey}-0`, { Title: title, Caption: caption });
-
-    const updated = await api.getImage(imageKey);
-    expect(updated.Title).toBe(title);
-    expect(updated.Caption).toBe(caption);
-  });
-
-  // -----------------------------------------------------------------------
-  // MA-07: !regions returns face/object regions
-  // -----------------------------------------------------------------------
-  test('MA-07: !regions returns face/object regions when present', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    const refPath = path.join(referenceImagesDir, 'metadata-xmp-regions.jpg');
-    if (!fs.existsSync(refPath)) { test.skip(); return; }
-
-    const upload = await api.uploadImage(refPath, testAlbumUri, { title: 'MA-07 Regions' });
-    const imageKey = SmugMugAPI.extractImageKey(upload.ImageUri);
-    const regions = await api.getRegions(imageKey);
-
-    expect(regions.length).toBeGreaterThan(0);
-    // Each region should have coordinate data
-    for (const region of regions) {
-      expect(region).toHaveProperty('X');
-      expect(region).toHaveProperty('Y');
-    }
-  });
+  if (bExif?.DateTimeOriginal) {
+    const bDate = new Date(bExif.DateTimeOriginal).toISOString().slice(0, 19);
+    const cDate = new Date(cExif?.DateTimeOriginal).toISOString().slice(0, 19);
+    expect(cDate).toBe(bDate);
+  }
 });

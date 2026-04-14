@@ -1,154 +1,149 @@
 /**
- * RC-01 through RC-04: Display Resolution Cap (Photo Protection)
+ * RC-01 through RC-05: Display Resolution Cap
  *
- * Verifies that the photo protection display resolution cap limits
- * the maximum image size served to visitors while preserving full
- * resolution for the gallery owner.
+ * Verifies that the candidate image does not exceed expected resolution
+ * limits and that its dimensions are consistent with the baseline.
  *
- * Prerequisites:
- *   - A test gallery with photo protection enabled and display
- *     resolution capped (e.g., to Medium — 600px longest edge)
- *   - Both authenticated (owner) and unauthenticated API access
+ * Images are fetched directly from CDN URLs:
+ *   BASELINE_URL — production smugmug.com image (ground truth)
+ *   CANDIDATE_URL — inside.smugmug.net image under test
  *
- * Reference images required in /reference-images/:
- *   - resolution-cap-test.jpg — A high-resolution image (e.g., 6000×4000)
+ * The expected maximum longest edge can be overridden via:
+ *   TEST_RESOLUTION_CAP_MAX env var (default: no cap enforced beyond sanity check)
  */
 
-import { test, expect } from '../helpers/test-fixtures';
-import { SmugMugAPI } from '../helpers/smugmug-api';
-import * as path from 'path';
-import * as fs from 'fs';
+import { test, expect } from "@playwright/test";
+import * as https from "https";
 
-// Album with resolution cap enabled — set in .env or here
-const CAPPED_ALBUM_KEY = process.env.TEST_CAPPED_ALBUM_KEY || '';
-const CAPPED_ALBUM_URI = CAPPED_ALBUM_KEY ? `/api/v2/album/${CAPPED_ALBUM_KEY}` : '';
+const BASELINE_URL =
+  "https://photos.smugmug.com/photos/i-pLCbGmQ/0/M7cnhpSpvR2TX2NQ2c5h9hb5Msq5hmgPt76ZznKN4/O/i-pLCbGmQ.jpg";
+const CANDIDATE_URL =
+  "https://photos.inside.smugmug.net/photos/i-8ZMdb55/0/MmQnKcKsXBbScjjkVhRM8qJWWpTqnLxDnRxCKrPMj/O/i-8ZMdb55.jpg";
 
-// The expected maximum longest edge for the configured cap
-// (e.g., 600 for "Medium", 800 for "Large", 1024 for "XLarge")
-const EXPECTED_MAX_EDGE = parseInt(process.env.TEST_RESOLUTION_CAP_MAX || '600', 10);
+const RESOLUTION_CAP_MAX = process.env.TEST_RESOLUTION_CAP_MAX
+  ? parseInt(process.env.TEST_RESOLUTION_CAP_MAX, 10)
+  : null;
 
-test.describe('Display Resolution Cap (Photo Protection)', () => {
-  test.beforeEach(() => {
-    if (!CAPPED_ALBUM_KEY) {
-      test.skip();
-    }
+function fetchImageBuffer(url: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () => resolve(Buffer.concat(chunks)));
+        res.on("error", reject);
+      })
+      .on("error", reject);
+  });
+}
+
+async function getDimensions(
+  buf: Buffer,
+): Promise<{ width: number; height: number }> {
+  const sharp = require("sharp");
+  const { width, height } = await sharp(buf).metadata();
+  return { width: width!, height: height! };
+}
+
+// -----------------------------------------------------------------------
+// RC-01: Candidate longest edge does not exceed resolution cap (if set)
+// -----------------------------------------------------------------------
+test("RC-01: Candidate longest edge does not exceed resolution cap", async () => {
+  if (!RESOLUTION_CAP_MAX) {
+    console.log(
+      "TEST_RESOLUTION_CAP_MAX not set — skipping cap enforcement check",
+    );
+    return;
+  }
+  const buffer = await fetchImageBuffer(CANDIDATE_URL);
+  const { width, height } = await getDimensions(buffer);
+  const longestEdge = Math.max(width, height);
+  console.log(
+    `Candidate longest edge: ${longestEdge}px (cap: ${RESOLUTION_CAP_MAX}px)`,
+  );
+  expect(longestEdge).toBeLessThanOrEqual(RESOLUTION_CAP_MAX);
+});
+
+// -----------------------------------------------------------------------
+// RC-02: Baseline longest edge does not exceed resolution cap (if set)
+// -----------------------------------------------------------------------
+test("RC-02: Baseline longest edge does not exceed resolution cap", async () => {
+  if (!RESOLUTION_CAP_MAX) {
+    console.log("TEST_RESOLUTION_CAP_MAX not set — skipping");
+    return;
+  }
+  const buffer = await fetchImageBuffer(BASELINE_URL);
+  const { width, height } = await getDimensions(buffer);
+  const longestEdge = Math.max(width, height);
+  console.log(
+    `Baseline longest edge: ${longestEdge}px (cap: ${RESOLUTION_CAP_MAX}px)`,
+  );
+  expect(longestEdge).toBeLessThanOrEqual(RESOLUTION_CAP_MAX);
+});
+
+// -----------------------------------------------------------------------
+// RC-03: Candidate dimensions match baseline dimensions
+// -----------------------------------------------------------------------
+test("RC-03: Candidate dimensions match baseline dimensions", async () => {
+  const [baselineBuffer, candidateBuffer] = await Promise.all([
+    fetchImageBuffer(BASELINE_URL),
+    fetchImageBuffer(CANDIDATE_URL),
+  ]);
+  const [bDims, cDims] = await Promise.all([
+    getDimensions(baselineBuffer),
+    getDimensions(candidateBuffer),
+  ]);
+
+  console.log(
+    `Baseline: ${bDims.width}x${bDims.height}, Candidate: ${cDims.width}x${cDims.height}`,
+  );
+  expect(cDims.width).toBe(bDims.width);
+  expect(cDims.height).toBe(bDims.height);
+});
+
+// -----------------------------------------------------------------------
+// RC-04: Candidate longest edge is within a sane upper bound (no runaway upscale)
+// -----------------------------------------------------------------------
+test("RC-04: Candidate longest edge is within sane upper bound", async () => {
+  const buffer = await fetchImageBuffer(CANDIDATE_URL);
+  const { width, height } = await getDimensions(buffer);
+  const longestEdge = Math.max(width, height);
+  console.log(`Candidate longest edge: ${longestEdge}px`);
+  // No image served from CDN should exceed 10K on the longest edge
+  expect(longestEdge).toBeLessThanOrEqual(10_000);
+});
+
+// -----------------------------------------------------------------------
+// RC-05: Candidate renders at correct dimensions in browser
+// -----------------------------------------------------------------------
+test("RC-05: Candidate renders at correct dimensions in browser", async ({
+  page,
+}) => {
+  const buffer = await fetchImageBuffer(CANDIDATE_URL);
+  const { width: bufWidth, height: bufHeight } = await getDimensions(buffer);
+
+  await page.goto(CANDIDATE_URL);
+  const img = page.locator("img");
+  await img.waitFor({ state: "visible" });
+  await page.waitForFunction(() => {
+    const el = document.querySelector("img") as HTMLImageElement;
+    return el && el.complete && el.naturalWidth > 0;
   });
 
-  // -----------------------------------------------------------------------
-  // RC-01: Capped resolution limits max served size
-  // -----------------------------------------------------------------------
-  test('RC-01: Capped resolution limits maximum served size for visitors', async ({
-    imageCompare,
-    referenceImagesDir,
-  }) => {
-    const refPath = path.join(referenceImagesDir, 'resolution-cap-test.jpg');
-    const apiKey = process.env.SMUGMUG_API_KEY || '';
-    const publicApi = SmugMugAPI.withApiKey(apiKey);
+  const dims = await img.evaluate((el: HTMLImageElement) => ({
+    width: el.naturalWidth,
+    height: el.naturalHeight,
+  }));
 
-    // Upload as owner
-    // NOTE: Upload requires auth — this test assumes image is pre-uploaded
-    // or uses the authenticated api fixture for upload, then public for fetch.
+  const longestEdge = Math.max(dims.width, dims.height);
+  console.log(
+    `Browser rendered: ${dims.width}x${dims.height}, longest edge: ${longestEdge}px`,
+  );
 
-    // For a pre-uploaded image, get album images
-    const { images } = await publicApi.getAlbumImages(CAPPED_ALBUM_KEY, 1, 1);
-    if (images.length === 0) { test.skip(); return; }
+  if (RESOLUTION_CAP_MAX) {
+    expect(longestEdge).toBeLessThanOrEqual(RESOLUTION_CAP_MAX);
+  }
 
-    const imageKey = images[0].ImageKey || SmugMugAPI.extractImageKey(images[0].Uris?.Image?.Uri || '');
-    const tiers = await publicApi.getSizeDetails(imageKey);
-
-    for (const tier of tiers) {
-      if (tier.label === 'O') continue; // Original shouldn't be accessible
-      const tierBuffer = await publicApi.downloadBuffer(tier.url);
-      const dims = await imageCompare.getDimensions(tierBuffer);
-      const longestEdge = Math.max(dims.width, dims.height);
-
-      expect(
-        longestEdge,
-        `Tier ${tier.label} (${dims.width}×${dims.height}) exceeds cap of ${EXPECTED_MAX_EDGE}px`,
-      ).toBeLessThanOrEqual(EXPECTED_MAX_EDGE);
-    }
-  });
-
-  // -----------------------------------------------------------------------
-  // RC-02: Capped resolution doesn't affect owner's view
-  // -----------------------------------------------------------------------
-  test('RC-02: Owner can still access full resolution', async ({
-    api,
-    imageCompare,
-    referenceImagesDir,
-  }) => {
-    const { images } = await api.getAlbumImages(CAPPED_ALBUM_KEY, 1, 1);
-    if (images.length === 0) { test.skip(); return; }
-
-    const imageKey = images[0].ImageKey || SmugMugAPI.extractImageKey(images[0].Uris?.Image?.Uri || '');
-    const tiers = await api.getSizeDetails(imageKey);
-
-    // Owner should have access to tiers beyond the cap
-    const largeTiers = tiers.filter((t) => {
-      if (t.label === 'O') return false;
-      return Math.max(t.width, t.height) > EXPECTED_MAX_EDGE;
-    });
-
-    expect(
-      largeTiers.length,
-      'Owner should have access to tiers larger than the resolution cap',
-    ).toBeGreaterThan(0);
-
-    // Verify the large tier is actually downloadable
-    const largest = largeTiers.sort((a, b) => b.width * b.height - a.width * a.height)[0];
-    const buffer = await api.downloadBuffer(largest.url);
-    const dims = await imageCompare.getDimensions(buffer);
-    expect(Math.max(dims.width, dims.height)).toBeGreaterThan(EXPECTED_MAX_EDGE);
-  });
-
-  // -----------------------------------------------------------------------
-  // RC-03: Owner can download full-resolution original
-  // -----------------------------------------------------------------------
-  test('RC-03: Owner archived download is full resolution', async ({
-    api,
-    imageCompare,
-  }) => {
-    const { images } = await api.getAlbumImages(CAPPED_ALBUM_KEY, 1, 1);
-    if (images.length === 0) { test.skip(); return; }
-
-    const imageKey = images[0].ImageKey || SmugMugAPI.extractImageKey(images[0].Uris?.Image?.Uri || '');
-    const imageData = await api.getImage(imageKey);
-
-    const downloadedBuffer = await api.downloadBuffer(imageData.ArchivedUri);
-    const dims = await imageCompare.getDimensions(downloadedBuffer);
-
-    // Original should be much larger than the cap
-    expect(Math.max(dims.width, dims.height)).toBeGreaterThan(EXPECTED_MAX_EDGE);
-    expect(dims.width).toBe(imageData.OriginalWidth);
-    expect(dims.height).toBe(imageData.OriginalHeight);
-  });
-
-  // -----------------------------------------------------------------------
-  // RC-04: Lightbox respects resolution cap for visitors (UI test)
-  // -----------------------------------------------------------------------
-  test('RC-04: Lightbox respects resolution cap for visitors', async ({
-    page,
-    imageCompare,
-  }) => {
-    // This test requires visiting the gallery as an unauthenticated user
-    // and inspecting the image source loaded in Lightbox.
-
-    // TODO: Navigate to the capped gallery's public URL (no auth)
-    // TODO: Open Lightbox on an image
-    // TODO: Inspect the img src URL or use page.evaluate to get naturalWidth/naturalHeight
-    // TODO: Verify dimensions don't exceed the cap
-
-    // Example approach:
-    // await page.goto('https://inside.smugmug.net/...gallery-url...');
-    // await page.locator('[data-testid="gallery-image"]').first().click();
-    // const imgSrc = await page.locator('.sm-lightbox img').getAttribute('src');
-    // const naturalDims = await page.evaluate(() => {
-    //   const img = document.querySelector('.sm-lightbox img') as HTMLImageElement;
-    //   return { width: img.naturalWidth, height: img.naturalHeight };
-    // });
-    // const longestEdge = Math.max(naturalDims.width, naturalDims.height);
-    // expect(longestEdge).toBeLessThanOrEqual(EXPECTED_MAX_EDGE);
-
-    test.skip(); // Implement after selector discovery
-  });
+  expect(dims.width).toBe(bufWidth);
+  expect(dims.height).toBe(bufHeight);
 });

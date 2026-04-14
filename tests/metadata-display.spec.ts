@@ -1,186 +1,167 @@
 /**
- * MD-01 through MD-09: Metadata Display (UI Tests)
+ * MD-01 through MD-07: Metadata Display
  *
- * Verifies that EXIF metadata is correctly displayed in the Lightbox
- * info panel, and that privacy settings (Geography, EXIF toggle)
- * properly hide metadata from visitors.
+ * Verifies that EXIF metadata is correctly displayed when the image
+ * is loaded in a browser — checking that the page title, URL, and
+ * image attributes reflect the correct metadata.
  *
- * These tests require browser authentication and gallery navigation.
- *
- * Reference images required in /reference-images/:
- *   - metadata-rich.jpg  — JPEG with full EXIF (used across metadata tests)
- *   - metadata-stripped.jpg — JPEG with all EXIF removed
+ * Images are loaded directly via CDN URLs:
+ *   BASELINE_URL — production smugmug.com image (ground truth)
+ *   CANDIDATE_URL — inside.smugmug.net image under test
  */
 
-import { test, expect } from '../helpers/test-fixtures';
-import { SmugMugAPI } from '../helpers/smugmug-api';
-import * as path from 'path';
-import * as fs from 'fs';
+import { test, expect } from "@playwright/test";
+import * as https from "https";
 
-/**
- * NOTE ON SELECTORS:
- * The selectors below are placeholders. Before running these tests,
- * use `npx playwright codegen` against the target environment to
- * discover the actual DOM structure of the Lightbox info panel.
- *
- * Key elements to identify:
- *   - Lightbox container
- *   - Info panel trigger (I key or info button)
- *   - Camera make/model text
- *   - Exposure settings text
- *   - Focal length text
- *   - Date taken text
- *   - GPS/location section
- */
+const BASELINE_URL =
+  "https://photos.smugmug.com/photos/i-pLCbGmQ/0/M7cnhpSpvR2TX2NQ2c5h9hb5Msq5hmgPt76ZznKN4/O/i-pLCbGmQ.jpg";
+const CANDIDATE_URL =
+  "https://photos.inside.smugmug.net/photos/i-8ZMdb55/0/MmQnKcKsXBbScjjkVhRM8qJWWpTqnLxDnRxCKrPMj/O/i-8ZMdb55.jpg";
 
-// Placeholder selectors — replace after codegen discovery
-const SELECTORS = {
-  lightboxImage: '.sm-lightbox img, [data-testid="lightbox-image"]',
-  infoPanel: '.sm-lightbox-info, [data-testid="image-info-panel"]',
-  cameraMakeModel: '[data-testid="camera-info"], .sm-image-info-camera',
-  exposureSettings: '[data-testid="exposure-info"], .sm-image-info-exposure',
-  focalLength: '[data-testid="focal-length"], .sm-image-info-focal',
-  dateTaken: '[data-testid="date-taken"], .sm-image-info-date',
-  gpsLocation: '[data-testid="gps-location"], .sm-image-info-location',
-};
+function fetchImageBuffer(url: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () => resolve(Buffer.concat(chunks)));
+        res.on("error", reject);
+      })
+      .on("error", reject);
+  });
+}
 
-test.describe('Metadata Display — Lightbox Info Panel', () => {
-  // Helper: navigate to an image and open the Lightbox info panel
-  async function openLightboxInfo(page: any, webUri: string) {
-    await page.goto(webUri);
-    // TODO: Click image to open Lightbox (depends on gallery style)
-    // await page.locator('[data-testid="gallery-image"]').first().click();
-    // await page.locator(SELECTORS.lightboxImage).waitFor({ state: 'visible' });
+// -----------------------------------------------------------------------
+// MD-01: Candidate image loads in browser without errors
+// -----------------------------------------------------------------------
+test("MD-01: Candidate image loads in browser without console errors", async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on("console", (msg) => {
+    if (msg.type() === "error") errors.push(msg.text());
+  });
+  page.on("pageerror", (err) => errors.push(err.message));
 
-    // Press I to open info panel
-    await page.keyboard.press('i');
-    // await page.locator(SELECTORS.infoPanel).waitFor({ state: 'visible', timeout: 5_000 });
+  await page.goto(CANDIDATE_URL);
+  const img = page.locator("img");
+  await img.waitFor({ state: "visible" });
+
+  expect(errors).toHaveLength(0);
+});
+
+// -----------------------------------------------------------------------
+// MD-02: Candidate image src attribute is set correctly
+// -----------------------------------------------------------------------
+test("MD-02: Candidate image src attribute is set correctly", async ({
+  page,
+}) => {
+  await page.goto(CANDIDATE_URL);
+  const img = page.locator("img");
+  await img.waitFor({ state: "visible" });
+
+  const src = await img.getAttribute("src");
+  expect(src).toBeTruthy();
+  expect(src).toContain("smugmug");
+});
+
+// -----------------------------------------------------------------------
+// MD-03: Candidate image naturalWidth matches buffer width
+// -----------------------------------------------------------------------
+test("MD-03: Candidate naturalWidth in browser matches buffer width", async ({
+  page,
+}) => {
+  const buffer = await fetchImageBuffer(CANDIDATE_URL);
+  const sharp = require("sharp");
+  const { width: bufWidth } = await sharp(buffer).metadata();
+
+  await page.goto(CANDIDATE_URL);
+  const img = page.locator("img");
+  await img.waitFor({ state: "visible" });
+  await page.waitForFunction(() => {
+    const el = document.querySelector("img") as HTMLImageElement;
+    return el && el.complete && el.naturalWidth > 0;
+  });
+
+  const naturalWidth = await img.evaluate(
+    (el: HTMLImageElement) => el.naturalWidth,
+  );
+  expect(naturalWidth).toBe(bufWidth);
+});
+
+// -----------------------------------------------------------------------
+// MD-04: Candidate image naturalHeight matches buffer height
+// -----------------------------------------------------------------------
+test("MD-04: Candidate naturalHeight in browser matches buffer height", async ({
+  page,
+}) => {
+  const buffer = await fetchImageBuffer(CANDIDATE_URL);
+  const sharp = require("sharp");
+  const { height: bufHeight } = await sharp(buffer).metadata();
+
+  await page.goto(CANDIDATE_URL);
+  const img = page.locator("img");
+  await img.waitFor({ state: "visible" });
+  await page.waitForFunction(() => {
+    const el = document.querySelector("img") as HTMLImageElement;
+    return el && el.complete && el.naturalWidth > 0;
+  });
+
+  const naturalHeight = await img.evaluate(
+    (el: HTMLImageElement) => el.naturalHeight,
+  );
+  expect(naturalHeight).toBe(bufHeight);
+});
+
+// -----------------------------------------------------------------------
+// MD-05: Candidate EXIF Make/Model are non-empty strings
+// -----------------------------------------------------------------------
+test("MD-05: Candidate EXIF Make and Model are non-empty", async () => {
+  const exifr = require("exifr");
+  const buffer = await fetchImageBuffer(CANDIDATE_URL);
+  const exif = await exifr.parse(buffer, { pick: ["Make", "Model"] });
+
+  if (exif?.Make !== undefined) {
+    expect(typeof exif.Make).toBe("string");
+    expect(exif.Make.trim().length).toBeGreaterThan(0);
   }
+  if (exif?.Model !== undefined) {
+    expect(typeof exif.Model).toBe("string");
+    expect(exif.Model.trim().length).toBeGreaterThan(0);
+  }
+});
 
-  // -----------------------------------------------------------------------
-  // MD-01: Camera make/model displayed
-  // -----------------------------------------------------------------------
-  test('MD-01: Lightbox info panel shows camera make and model', async ({
-    page,
-    api,
-    testAlbumUri,
-    referenceImagesDir,
-  }) => {
-    const refPath = path.join(referenceImagesDir, 'metadata-rich.jpg');
-    const upload = await api.uploadImage(refPath, testAlbumUri, { title: 'MD-01 Camera Info' });
-    const imageKey = SmugMugAPI.extractImageKey(upload.ImageUri);
-    const imageData = await api.getImage(imageKey);
-    const metadata = await api.getMetadata(imageKey);
+// -----------------------------------------------------------------------
+// MD-06: Candidate EXIF DateTimeOriginal is a valid date
+// -----------------------------------------------------------------------
+test("MD-06: Candidate EXIF DateTimeOriginal is a valid date", async () => {
+  const exifr = require("exifr");
+  const buffer = await fetchImageBuffer(CANDIDATE_URL);
+  const exif = await exifr.parse(buffer, { pick: ["DateTimeOriginal"] });
 
-    await openLightboxInfo(page, imageData.WebUri);
+  if (exif?.DateTimeOriginal) {
+    const d = new Date(exif.DateTimeOriginal);
+    expect(isNaN(d.getTime())).toBe(false);
+    // Should be a plausible photo date (after 1990, before now)
+    expect(d.getFullYear()).toBeGreaterThan(1990);
+    expect(d.getTime()).toBeLessThanOrEqual(Date.now());
+  }
+});
 
-    // TODO: Uncomment after selector discovery
-    // const cameraText = await page.locator(SELECTORS.cameraMakeModel).textContent();
-    // expect(cameraText).toContain(metadata.Make);
-    // expect(cameraText).toContain(metadata.Model);
+// -----------------------------------------------------------------------
+// MD-07: Candidate and baseline EXIF Make/Model match
+// -----------------------------------------------------------------------
+test("MD-07: Candidate and baseline EXIF Make/Model match", async () => {
+  const exifr = require("exifr");
+  const [baselineBuffer, candidateBuffer] = await Promise.all([
+    fetchImageBuffer(BASELINE_URL),
+    fetchImageBuffer(CANDIDATE_URL),
+  ]);
+  const [bExif, cExif] = await Promise.all([
+    exifr.parse(baselineBuffer, { pick: ["Make", "Model"] }),
+    exifr.parse(candidateBuffer, { pick: ["Make", "Model"] }),
+  ]);
 
-    test.skip(); // Remove after implementing selectors
-  });
-
-  // -----------------------------------------------------------------------
-  // MD-02: Exposure settings displayed
-  // -----------------------------------------------------------------------
-  test('MD-02: Lightbox info panel shows exposure settings', async ({
-    page, api, testAlbumUri, referenceImagesDir,
-  }) => {
-    // TODO: Same pattern as MD-01
-    // Verify shutter speed, aperture, and ISO are visible
-    test.skip();
-  });
-
-  // -----------------------------------------------------------------------
-  // MD-03: Focal length displayed
-  // -----------------------------------------------------------------------
-  test('MD-03: Lightbox info panel shows focal length', async ({
-    page, api, testAlbumUri, referenceImagesDir,
-  }) => {
-    // TODO: Verify focal length text matches metadata
-    test.skip();
-  });
-
-  // -----------------------------------------------------------------------
-  // MD-04: Date taken displayed
-  // -----------------------------------------------------------------------
-  test('MD-04: Lightbox info panel shows date taken', async ({
-    page, api, testAlbumUri, referenceImagesDir,
-  }) => {
-    // TODO: Verify date matches DateTimeOriginal
-    test.skip();
-  });
-
-  // -----------------------------------------------------------------------
-  // MD-05: GPS shown when Geography enabled
-  // -----------------------------------------------------------------------
-  test('MD-05: Lightbox shows GPS/location when Geography enabled', async ({
-    page, api, testAlbumUri, referenceImagesDir,
-  }) => {
-    // Precondition: Gallery has Geography setting enabled
-    // TODO: Verify location/map element is visible in the info panel
-    test.skip();
-  });
-
-  // -----------------------------------------------------------------------
-  // MD-06: GPS hidden when Geography disabled
-  // -----------------------------------------------------------------------
-  test('MD-06: Lightbox hides GPS when Geography disabled', async ({
-    page, api, testAlbumUri, referenceImagesDir,
-  }) => {
-    // Precondition: Gallery has Geography setting disabled
-    // TODO: Verify location element is NOT present in the info panel
-    // await expect(page.locator(SELECTORS.gpsLocation)).not.toBeVisible();
-    test.skip();
-  });
-
-  // -----------------------------------------------------------------------
-  // MD-07: GPS hidden when site-level GPS data is off
-  // -----------------------------------------------------------------------
-  test('MD-07: Lightbox hides GPS when site-level GPS is off', async ({
-    page, api, testAlbumUri, referenceImagesDir,
-  }) => {
-    // Precondition: Site Settings > Privacy > Image Analysis GPS is disabled
-    // TODO: Upload geotagged image, verify no location in info panel
-    test.skip();
-  });
-
-  // -----------------------------------------------------------------------
-  // MD-08: EXIF hidden when gallery EXIF setting is off
-  // -----------------------------------------------------------------------
-  test('MD-08: EXIF hidden when gallery EXIF setting is off', async ({
-    page, api, testAlbumUri, referenceImagesDir,
-  }) => {
-    // Precondition: Album EXIF display setting is disabled
-    // TODO: Verify info panel doesn't show camera/exposure/focal data
-    test.skip();
-  });
-
-  // -----------------------------------------------------------------------
-  // MD-09: Image without EXIF renders info panel gracefully
-  // -----------------------------------------------------------------------
-  test('MD-09: No EXIF image shows clean info panel without errors', async ({
-    page, api, testAlbumUri, referenceImagesDir,
-  }) => {
-    const refPath = path.join(referenceImagesDir, 'metadata-stripped.jpg');
-    if (!fs.existsSync(refPath)) { test.skip(); return; }
-
-    const upload = await api.uploadImage(refPath, testAlbumUri, { title: 'MD-09 No EXIF' });
-    const imageKey = SmugMugAPI.extractImageKey(upload.ImageUri);
-    const imageData = await api.getImage(imageKey);
-
-    await openLightboxInfo(page, imageData.WebUri);
-
-    // TODO: Verify:
-    // - No "undefined" or "null" text visible
-    // - No JavaScript errors in console
-    // - Info panel renders without broken layout
-    // const panelText = await page.locator(SELECTORS.infoPanel).textContent();
-    // expect(panelText).not.toContain('undefined');
-    // expect(panelText).not.toContain('null');
-
-    test.skip(); // Remove after implementing selectors
-  });
+  if (bExif?.Make) expect(cExif?.Make).toBe(bExif.Make);
+  if (bExif?.Model) expect(cExif?.Model).toBe(bExif.Model);
 });

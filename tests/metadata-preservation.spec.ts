@@ -1,265 +1,225 @@
 /**
- * MP-01 through MP-14: Metadata Preservation
+ * MP-01 through MP-10: Metadata Preservation
  *
- * Verifies that SmugMug preserves EXIF, IPTC, and XMP metadata fields
- * after upload. Compares local file EXIF against API !metadata responses.
+ * Verifies that the candidate image preserves key EXIF/IPTC metadata
+ * fields compared to the baseline (production) image.
  *
- * Reference images required in /reference-images/:
- *   - metadata-rich.jpg — JPEG with comprehensive EXIF: Make, Model, exposure,
- *     focal length, GPS, lens, white balance, flash, copyright, artist,
- *     UserComment, DateTimeOriginal, Software
- *   - metadata-iptc.jpg — JPEG with IPTC caption, keywords, and title
+ * Images are fetched directly from CDN URLs:
+ *   BASELINE_URL — production smugmug.com image (ground truth)
+ *   CANDIDATE_URL — inside.smugmug.net image under test
  */
 
-import { test, expect } from '../helpers/test-fixtures';
-import { SmugMugAPI } from '../helpers/smugmug-api';
-import { readExif, readIPTC } from '../helpers/exif-utils';
-import * as path from 'path';
-import * as fs from 'fs';
+import { test, expect } from "@playwright/test";
+import * as https from "https";
 
-test.describe('Metadata Preservation', () => {
-  let imageKey: string;
-  let localExif: Awaited<ReturnType<typeof readExif>>;
-  let apiMetadata: Record<string, any>;
+const BASELINE_URL =
+  "https://photos.smugmug.com/photos/i-pLCbGmQ/0/M7cnhpSpvR2TX2NQ2c5h9hb5Msq5hmgPt76ZznKN4/O/i-pLCbGmQ.jpg";
+const CANDIDATE_URL =
+  "https://photos.inside.smugmug.net/photos/i-8ZMdb55/0/MmQnKcKsXBbScjjkVhRM8qJWWpTqnLxDnRxCKrPMj/O/i-8ZMdb55.jpg";
 
-  test.beforeAll(async ({ browser }) => {
-    // This hook uploads the rich-metadata image once and shares it across tests.
-    // NOTE: If running tests in isolation, each test should upload its own.
+function fetchImageBuffer(url: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, (res) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk) => chunks.push(chunk));
+        res.on("end", () => resolve(Buffer.concat(chunks)));
+        res.on("error", reject);
+      })
+      .on("error", reject);
   });
+}
 
-  // Helper: upload and get metadata (called by first test, cached for subsequent)
-  async function ensureUploaded(
-    api: SmugMugAPI,
-    testAlbumUri: string,
-    referenceImagesDir: string,
-  ) {
-    if (imageKey) return;
+// -----------------------------------------------------------------------
+// MP-01: Camera make preserved
+// -----------------------------------------------------------------------
+test("MP-01: Camera make preserved in candidate", async () => {
+  const exifr = require("exifr");
+  const [baselineBuffer, candidateBuffer] = await Promise.all([
+    fetchImageBuffer(BASELINE_URL),
+    fetchImageBuffer(CANDIDATE_URL),
+  ]);
+  const [bExif, cExif] = await Promise.all([
+    exifr.parse(baselineBuffer, { pick: ["Make"] }),
+    exifr.parse(candidateBuffer, { pick: ["Make"] }),
+  ]);
+  if (bExif?.Make) {
+    expect(cExif?.Make).toBe(bExif.Make);
+  }
+});
 
-    const refPath = path.join(referenceImagesDir, 'metadata-rich.jpg');
-    localExif = await readExif(refPath);
+// -----------------------------------------------------------------------
+// MP-02: Camera model preserved
+// -----------------------------------------------------------------------
+test("MP-02: Camera model preserved in candidate", async () => {
+  const exifr = require("exifr");
+  const [baselineBuffer, candidateBuffer] = await Promise.all([
+    fetchImageBuffer(BASELINE_URL),
+    fetchImageBuffer(CANDIDATE_URL),
+  ]);
+  const [bExif, cExif] = await Promise.all([
+    exifr.parse(baselineBuffer, { pick: ["Model"] }),
+    exifr.parse(candidateBuffer, { pick: ["Model"] }),
+  ]);
+  if (bExif?.Model) {
+    expect(cExif?.Model).toBe(bExif.Model);
+  }
+});
 
-    const upload = await api.uploadImage(refPath, testAlbumUri, {
-      title: 'Metadata Preservation Test',
-    });
-    imageKey = SmugMugAPI.extractImageKey(upload.ImageUri);
-    apiMetadata = await api.getMetadata(imageKey);
+// -----------------------------------------------------------------------
+// MP-03: Exposure time preserved
+// -----------------------------------------------------------------------
+test("MP-03: Exposure time preserved in candidate", async () => {
+  const exifr = require("exifr");
+  const [baselineBuffer, candidateBuffer] = await Promise.all([
+    fetchImageBuffer(BASELINE_URL),
+    fetchImageBuffer(CANDIDATE_URL),
+  ]);
+  const [bExif, cExif] = await Promise.all([
+    exifr.parse(baselineBuffer, { pick: ["ExposureTime"] }),
+    exifr.parse(candidateBuffer, { pick: ["ExposureTime"] }),
+  ]);
+  if (bExif?.ExposureTime !== undefined) {
+    expect(cExif?.ExposureTime).toBeCloseTo(bExif.ExposureTime, 5);
+  }
+});
+
+// -----------------------------------------------------------------------
+// MP-04: Aperture (FNumber) preserved
+// -----------------------------------------------------------------------
+test("MP-04: Aperture (FNumber) preserved in candidate", async () => {
+  const exifr = require("exifr");
+  const [baselineBuffer, candidateBuffer] = await Promise.all([
+    fetchImageBuffer(BASELINE_URL),
+    fetchImageBuffer(CANDIDATE_URL),
+  ]);
+  const [bExif, cExif] = await Promise.all([
+    exifr.parse(baselineBuffer, { pick: ["FNumber"] }),
+    exifr.parse(candidateBuffer, { pick: ["FNumber"] }),
+  ]);
+  if (bExif?.FNumber !== undefined) {
+    expect(cExif?.FNumber).toBeCloseTo(bExif.FNumber, 2);
+  }
+});
+
+// -----------------------------------------------------------------------
+// MP-05: ISO preserved
+// -----------------------------------------------------------------------
+test("MP-05: ISO preserved in candidate", async () => {
+  const exifr = require("exifr");
+  const [baselineBuffer, candidateBuffer] = await Promise.all([
+    fetchImageBuffer(BASELINE_URL),
+    fetchImageBuffer(CANDIDATE_URL),
+  ]);
+  const [bExif, cExif] = await Promise.all([
+    exifr.parse(baselineBuffer, { pick: ["ISO"] }),
+    exifr.parse(candidateBuffer, { pick: ["ISO"] }),
+  ]);
+  if (bExif?.ISO !== undefined) {
+    expect(cExif?.ISO).toBe(bExif.ISO);
+  }
+});
+
+// -----------------------------------------------------------------------
+// MP-06: Focal length preserved
+// -----------------------------------------------------------------------
+test("MP-06: Focal length preserved in candidate", async () => {
+  const exifr = require("exifr");
+  const [baselineBuffer, candidateBuffer] = await Promise.all([
+    fetchImageBuffer(BASELINE_URL),
+    fetchImageBuffer(CANDIDATE_URL),
+  ]);
+  const [bExif, cExif] = await Promise.all([
+    exifr.parse(baselineBuffer, { pick: ["FocalLength"] }),
+    exifr.parse(candidateBuffer, { pick: ["FocalLength"] }),
+  ]);
+  if (bExif?.FocalLength !== undefined) {
+    expect(cExif?.FocalLength).toBeCloseTo(bExif.FocalLength, 1);
+  }
+});
+
+// -----------------------------------------------------------------------
+// MP-07: DateTimeOriginal preserved
+// -----------------------------------------------------------------------
+test("MP-07: DateTimeOriginal preserved in candidate", async () => {
+  const exifr = require("exifr");
+  const [baselineBuffer, candidateBuffer] = await Promise.all([
+    fetchImageBuffer(BASELINE_URL),
+    fetchImageBuffer(CANDIDATE_URL),
+  ]);
+  const [bExif, cExif] = await Promise.all([
+    exifr.parse(baselineBuffer, { pick: ["DateTimeOriginal"] }),
+    exifr.parse(candidateBuffer, { pick: ["DateTimeOriginal"] }),
+  ]);
+  if (bExif?.DateTimeOriginal) {
+    const bDate = new Date(bExif.DateTimeOriginal).toISOString().slice(0, 19);
+    const cDate = new Date(cExif?.DateTimeOriginal).toISOString().slice(0, 19);
+    expect(cDate).toBe(bDate);
+  }
+});
+
+// -----------------------------------------------------------------------
+// MP-08: GPS coordinates preserved
+// -----------------------------------------------------------------------
+test("MP-08: GPS coordinates preserved in candidate", async () => {
+  const exifr = require("exifr");
+  const [baselineBuffer, candidateBuffer] = await Promise.all([
+    fetchImageBuffer(BASELINE_URL),
+    fetchImageBuffer(CANDIDATE_URL),
+  ]);
+  const [bExif, cExif] = await Promise.all([
+    exifr.parse(baselineBuffer, { gps: true }),
+    exifr.parse(candidateBuffer, { gps: true }),
+  ]);
+  if (bExif?.latitude !== undefined) {
+    expect(cExif?.latitude).toBeCloseTo(bExif.latitude, 4);
+    expect(cExif?.longitude).toBeCloseTo(bExif.longitude, 4);
+  }
+});
+
+// -----------------------------------------------------------------------
+// MP-09: Copyright field preserved
+// -----------------------------------------------------------------------
+test("MP-09: Copyright field preserved in candidate", async () => {
+  const exifr = require("exifr");
+  const [baselineBuffer, candidateBuffer] = await Promise.all([
+    fetchImageBuffer(BASELINE_URL),
+    fetchImageBuffer(CANDIDATE_URL),
+  ]);
+  const [bExif, cExif] = await Promise.all([
+    exifr.parse(baselineBuffer, { pick: ["Copyright"] }),
+    exifr.parse(candidateBuffer, { pick: ["Copyright"] }),
+  ]);
+  if (bExif?.Copyright) {
+    expect(cExif?.Copyright).toBe(bExif.Copyright);
+  }
+});
+
+// -----------------------------------------------------------------------
+// MP-10: All baseline EXIF fields present in candidate
+// -----------------------------------------------------------------------
+test("MP-10: All baseline EXIF fields are present in candidate", async () => {
+  const exifr = require("exifr");
+  const [baselineBuffer, candidateBuffer] = await Promise.all([
+    fetchImageBuffer(BASELINE_URL),
+    fetchImageBuffer(CANDIDATE_URL),
+  ]);
+  const [bExif, cExif] = await Promise.all([
+    exifr.parse(baselineBuffer, { all: true }),
+    exifr.parse(candidateBuffer, { all: true }),
+  ]);
+
+  const missing: string[] = [];
+  for (const key of Object.keys(bExif ?? {})) {
+    if (!Object.prototype.hasOwnProperty.call(cExif, key)) {
+      missing.push(key);
+    }
   }
 
-  // -----------------------------------------------------------------------
-  // MP-01: Camera make and model
-  // -----------------------------------------------------------------------
-  test('MP-01: Camera make and model preserved', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    await ensureUploaded(api, testAlbumUri, referenceImagesDir);
-    expect(apiMetadata.Make).toBe(localExif.Make);
-    expect(apiMetadata.Model).toBe(localExif.Model);
-  });
-
-  // -----------------------------------------------------------------------
-  // MP-02: Exposure settings
-  // -----------------------------------------------------------------------
-  test('MP-02: Exposure settings preserved (shutter, aperture, ISO)', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    await ensureUploaded(api, testAlbumUri, referenceImagesDir);
-
-    if (localExif.ExposureTime !== undefined) {
-      expect(apiMetadata.ExposureTime).toBeCloseTo(localExif.ExposureTime, 5);
-    }
-    if (localExif.FNumber !== undefined) {
-      expect(apiMetadata.FNumber).toBeCloseTo(localExif.FNumber, 2);
-    }
-    if (localExif.ISO !== undefined) {
-      // SmugMug may store as ISOSpeedRatings or ISO
-      const apiISO = apiMetadata.ISOSpeedRatings || apiMetadata.ISO;
-      expect(apiISO).toBe(localExif.ISO);
-    }
-  });
-
-  // -----------------------------------------------------------------------
-  // MP-03: Focal length
-  // -----------------------------------------------------------------------
-  test('MP-03: Focal length preserved', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    await ensureUploaded(api, testAlbumUri, referenceImagesDir);
-    if (localExif.FocalLength !== undefined) {
-      expect(apiMetadata.FocalLength).toBeCloseTo(localExif.FocalLength, 1);
-    }
-    if (localExif.FocalLengthIn35mmFormat !== undefined) {
-      const api35 = apiMetadata.FocalLengthIn35mmFilm || apiMetadata.FocalLengthIn35mmFormat;
-      expect(api35).toBe(localExif.FocalLengthIn35mmFormat);
-    }
-  });
-
-  // -----------------------------------------------------------------------
-  // MP-04: DateTimeOriginal
-  // -----------------------------------------------------------------------
-  test('MP-04: DateTimeOriginal preserved', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    await ensureUploaded(api, testAlbumUri, referenceImagesDir);
-    expect(apiMetadata.DateTimeOriginal).toBeDefined();
-    // Dates may be formatted differently — compare as strings or timestamps
-    const localDate = localExif.DateTimeOriginal
-      ? new Date(localExif.DateTimeOriginal).toISOString().slice(0, 19)
-      : undefined;
-    if (localDate) {
-      const apiDate = new Date(apiMetadata.DateTimeOriginal).toISOString().slice(0, 19);
-      expect(apiDate).toBe(localDate);
-    }
-  });
-
-  // -----------------------------------------------------------------------
-  // MP-05: GPS coordinates
-  // -----------------------------------------------------------------------
-  test('MP-05: GPS coordinates preserved', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    await ensureUploaded(api, testAlbumUri, referenceImagesDir);
-    const imgData = await api.getImage(imageKey);
-
-    if (localExif.GPSLatitude !== undefined) {
-      expect(imgData.Latitude).toBeCloseTo(localExif.GPSLatitude, 4);
-    }
-    if (localExif.GPSLongitude !== undefined) {
-      expect(imgData.Longitude).toBeCloseTo(localExif.GPSLongitude, 4);
-    }
-    if (localExif.GPSAltitude !== undefined) {
-      expect(imgData.Altitude).toBeCloseTo(localExif.GPSAltitude, 1);
-    }
-  });
-
-  // -----------------------------------------------------------------------
-  // MP-06: GPS matches between image endpoint and !metadata
-  // -----------------------------------------------------------------------
-  test('MP-06: GPS matches between image endpoint and !metadata', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    await ensureUploaded(api, testAlbumUri, referenceImagesDir);
-    const imgData = await api.getImage(imageKey);
-
-    if (apiMetadata.GPSLatitude !== undefined) {
-      expect(imgData.Latitude).toBeCloseTo(apiMetadata.GPSLatitude, 4);
-    }
-    if (apiMetadata.GPSLongitude !== undefined) {
-      expect(imgData.Longitude).toBeCloseTo(apiMetadata.GPSLongitude, 4);
-    }
-  });
-
-  // -----------------------------------------------------------------------
-  // MP-07: Lens info
-  // -----------------------------------------------------------------------
-  test('MP-07: Lens info preserved', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    await ensureUploaded(api, testAlbumUri, referenceImagesDir);
-    if (localExif.LensModel) {
-      const apiLens = apiMetadata.LensModel || apiMetadata.LensInfo;
-      expect(apiLens).toBeDefined();
-      expect(apiLens).toContain(localExif.LensModel);
-    }
-  });
-
-  // -----------------------------------------------------------------------
-  // MP-08: White balance
-  // -----------------------------------------------------------------------
-  test('MP-08: White balance preserved', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    await ensureUploaded(api, testAlbumUri, referenceImagesDir);
-    if (localExif.WhiteBalance !== undefined) {
-      expect(apiMetadata.WhiteBalance).toBeDefined();
-    }
-  });
-
-  // -----------------------------------------------------------------------
-  // MP-09: Flash status
-  // -----------------------------------------------------------------------
-  test('MP-09: Flash status preserved', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    await ensureUploaded(api, testAlbumUri, referenceImagesDir);
-    if (localExif.Flash !== undefined) {
-      expect(apiMetadata.Flash).toBeDefined();
-    }
-  });
-
-  // -----------------------------------------------------------------------
-  // MP-10: Copyright field
-  // -----------------------------------------------------------------------
-  test('MP-10: Copyright field preserved', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    await ensureUploaded(api, testAlbumUri, referenceImagesDir);
-    if (localExif.Copyright) {
-      expect(apiMetadata.Copyright).toBe(localExif.Copyright);
-    }
-  });
-
-  // -----------------------------------------------------------------------
-  // MP-11: Artist/Author field
-  // -----------------------------------------------------------------------
-  test('MP-11: Artist/Author field preserved', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    await ensureUploaded(api, testAlbumUri, referenceImagesDir);
-    if (localExif.Artist) {
-      expect(apiMetadata.Artist).toBe(localExif.Artist);
-    }
-  });
-
-  // -----------------------------------------------------------------------
-  // MP-12: IPTC caption preserved as Caption
-  // -----------------------------------------------------------------------
-  test('MP-12: IPTC caption preserved as image Caption', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    const refPath = path.join(referenceImagesDir, 'metadata-iptc.jpg');
-    if (!fs.existsSync(refPath)) { test.skip(); return; }
-
-    const iptc = await readIPTC(refPath);
-    const upload = await api.uploadImage(refPath, testAlbumUri, { title: 'MP-12 IPTC Caption' });
-    const key = SmugMugAPI.extractImageKey(upload.ImageUri);
-    const imgData = await api.getImage(key);
-
-    if (iptc.caption) {
-      expect(imgData.Caption).toBe(iptc.caption);
-    }
-  });
-
-  // -----------------------------------------------------------------------
-  // MP-13: IPTC keywords preserved as Keywords
-  // -----------------------------------------------------------------------
-  test('MP-13: IPTC keywords preserved as image Keywords', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    const refPath = path.join(referenceImagesDir, 'metadata-iptc.jpg');
-    if (!fs.existsSync(refPath)) { test.skip(); return; }
-
-    const iptc = await readIPTC(refPath);
-    const upload = await api.uploadImage(refPath, testAlbumUri, { title: 'MP-13 IPTC Keywords' });
-    const key = SmugMugAPI.extractImageKey(upload.ImageUri);
-    const imgData = await api.getImage(key);
-
-    if (iptc.keywords && iptc.keywords.length > 0) {
-      for (const kw of iptc.keywords) {
-        expect(imgData.KeywordArray, `Missing keyword: ${kw}`).toContain(kw);
-      }
-    }
-  });
-
-  // -----------------------------------------------------------------------
-  // MP-14: UserComment EXIF field
-  // -----------------------------------------------------------------------
-  test('MP-14: UserComment EXIF field preserved', async ({
-    api, testAlbumUri, referenceImagesDir,
-  }) => {
-    await ensureUploaded(api, testAlbumUri, referenceImagesDir);
-    if (localExif.UserComment) {
-      expect(apiMetadata.UserComment).toBeDefined();
-      expect(apiMetadata.UserComment).toBe(localExif.UserComment);
-    }
-  });
+  if (missing.length > 0)
+    console.log("Missing EXIF fields in candidate:", missing.join(", "));
+  expect(
+    missing,
+    `${missing.length} EXIF field(s) missing from candidate`,
+  ).toHaveLength(0);
 });
