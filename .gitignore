@@ -1,0 +1,8 @@
+node_modules/
+.env
+tests/baselines/
+tests/image-render.spec.js-snapshots/
+playwright-report/
+test-results/
+Test Images/
+*.DS_Store

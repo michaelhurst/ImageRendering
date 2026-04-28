@@ -1,0 +1,12 @@
+{
+<<<<<<< HEAD
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "playwright.reuseBrowser": true,
+  "playwright.showTrace": true
+}
+=======
+    "kiroAgent.configureMCP": "Disabled"
+}
+>>>>>>> origin/main
