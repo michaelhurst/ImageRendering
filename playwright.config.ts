@@ -3,7 +3,16 @@ import * as dotenv from "dotenv";
 
 dotenv.config();
 
-const ENVIRONMENT = process.env.ENVIRONMENT || "inside";
+const ENVIRONMENT = process.env.ENVIRONMENT;
+if (!ENVIRONMENT || !["inside", "production"].includes(ENVIRONMENT)) {
+  throw new Error(
+    `ENVIRONMENT must be set to "inside" or "production". Got: "${ENVIRONMENT ?? ""}".\n` +
+      "Set it in your .env file or pass it on the command line:\n" +
+      "  ENVIRONMENT=inside npx playwright test\n" +
+      "  ENVIRONMENT=production npx playwright test",
+  );
+}
+
 const BASE_URL =
   ENVIRONMENT === "production"
     ? "https://www.smugmug.com"
@@ -16,7 +25,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: 1,
   reporter: [["html"], ["list"]],
-  timeout: 120_000, // 2 min per test — uploads and CDN propagation can be slow
+  timeout: 180_000, // 3 min per test — uploads, CDN propagation, and tier generation can be slow
 
   use: {
     baseURL: BASE_URL,

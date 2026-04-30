@@ -1,11 +1,14 @@
 /**
  * RC-01 through RC-04 (API): Display Resolution Cap
  *
- * Uploads a high-resolution image and verifies that resolution cap
- * settings limit served sizes for visitors while preserving full
- * resolution for owners.
+ * Uploads a high-resolution image from local disk and verifies that
+ * resolution cap settings limit served sizes for visitors while
+ * preserving full resolution for owners.
  *
- * Requires: TEST_ALBUM_KEY, TEST_IMAGES_DIR, authenticated session
+ * Source images are read from TEST_IMAGES_DIR to ensure byte-for-byte
+ * integrity comparisons against a known-good local copy.
+ *
+ * Requires: TEST_IMAGES_DIR, authenticated session
  * Note: Gallery must have resolution cap configured for RC-01/RC-04 to enforce limits.
  */
 
@@ -49,7 +52,7 @@ test.describe("RC (API): Display Resolution Cap", () => {
     const hiresKey = await ensureUploaded(api, testAlbumUri);
     const tiers = await api.getSizeDetails(hiresKey);
     for (const tier of tiers) {
-      if (tier.label === "O") continue; // Original is exempt
+      if (tier.label === "O") continue;
       const longestEdge = Math.max(tier.width, tier.height);
       console.log(
         `${tier.label}: ${tier.width}x${tier.height} (longest: ${longestEdge})`,
@@ -66,14 +69,12 @@ test.describe("RC (API): Display Resolution Cap", () => {
     testAlbumUri,
   }) => {
     const hiresKey = await ensureUploaded(api, testAlbumUri);
-    const tiers = await api.getSizeDetails(hiresKey);
     const image = await api.getImage(hiresKey);
     const largest = await api.getLargestImage(hiresKey);
 
     console.log(`Original: ${image.OriginalWidth}x${image.OriginalHeight}`);
     console.log(`Largest available: ${largest.width}x${largest.height}`);
 
-    // As owner, largest image should be close to original dimensions
     expect(largest.width).toBeGreaterThan(0);
     expect(largest.height).toBeGreaterThan(0);
     expect(largest.url).toBeTruthy();
@@ -89,7 +90,6 @@ test.describe("RC (API): Display Resolution Cap", () => {
     const sharp = require("sharp");
     const sourceMeta = await sharp(fs.readFileSync(HIRES_PATH)).metadata();
 
-    // ArchivedUri should return the original full-resolution file
     expect(image.OriginalWidth).toBe(sourceMeta.width);
     expect(image.OriginalHeight).toBe(sourceMeta.height);
 
@@ -114,7 +114,6 @@ test.describe("RC (API): Display Resolution Cap", () => {
     await page.goto(image.WebUri);
     await page.waitForLoadState("networkidle");
 
-    // Check the loaded image dimensions
     const imgSrc = await page.evaluate(() => {
       const imgs = document.querySelectorAll("img");
       for (const img of imgs) {

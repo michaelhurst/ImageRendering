@@ -5,8 +5,13 @@
  *   import { SmugMugAPI, computeSSIM, readExif } from '../helpers';
  */
 
-export { SmugMugAPI } from './smugmug-api';
-export * from './image-comparison';
-export * from './exif-utils';
-export { loginAndSaveState, getAuthStatePath, applyAuthState } from './auth';
-export { test, expect } from './test-fixtures';
+export { SmugMugAPI } from "./smugmug-api";
+export {
+  GalleryImages,
+  getGalleryImages,
+  type GalleryImageInfo,
+} from "./gallery-images";
+export * from "./image-comparison";
+export * from "./exif-utils";
+export { loginAndSaveState, getAuthStatePath, applyAuthState } from "./auth";
+export { test, expect } from "./test-fixtures";

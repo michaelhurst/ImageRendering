@@ -4,30 +4,14 @@
  * Verifies that test images do not have unexpected watermark artifacts
  * and render cleanly.
  *
- * Uses c-watermark-test.jpg (4000x3000) as the primary test image
- * and c-sizing-landscape.jpg as a clean reference for pixel diff.
+ * Uses c-watermark-test.jpg (4000x3000) as the primary test image.
+ * Images are fetched from the SmugMug baseline gallery.
  */
 
-import { test, expect } from "@playwright/test";
-import * as fs from "fs";
-import * as path from "path";
+import { test, expect } from "../helpers/test-fixtures";
+import { getGalleryImages } from "../helpers/gallery-images";
 
-const IMAGES_DIR =
-  process.env.TEST_IMAGES_DIR || path.join(__dirname, "../Test Images");
-const WATERMARK_PATH = path.join(IMAGES_DIR, "c-watermark-test.jpg");
-// Use the small image for browser load tests — safe data URL size
-const SMALL_PATH = path.join(IMAGES_DIR, "c-sizing-small.jpg");
-
-function readBuffer(filePath: string): Buffer {
-  return fs.readFileSync(filePath);
-}
-
-function fileToDataUrl(filePath: string): string {
-  const buffer = fs.readFileSync(filePath);
-  const ext = path.extname(filePath).toLowerCase().slice(1);
-  const mime = ext === "png" ? "image/png" : "image/jpeg";
-  return `data:${mime};base64,${buffer.toString("base64")}`;
-}
+const gallery = getGalleryImages();
 
 async function countUniformBlocks(buf: Buffer): Promise<number> {
   const sharp = require("sharp");
@@ -65,7 +49,8 @@ test("WM-01: Watermark test image loads and is visible in browser", async ({
   page,
 }) => {
   // Use small image for the browser test to keep data URL size reasonable
-  const dataUrl = fileToDataUrl(SMALL_PATH);
+  const buf = await gallery.fetchImage("c-sizing-small.jpg");
+  const dataUrl = gallery.bufferToDataUrl(buf, "c-sizing-small.jpg");
   await page.setContent(
     `<html><body><img id="img" src="${dataUrl}"></body></html>`,
   );
@@ -84,7 +69,8 @@ test("WM-01: Watermark test image loads and is visible in browser", async ({
 // -----------------------------------------------------------------------
 test("WM-02: Watermark test image has valid dimensions", async () => {
   const sharp = require("sharp");
-  const { width, height } = await sharp(readBuffer(WATERMARK_PATH)).metadata();
+  const buf = await gallery.fetchImage("c-watermark-test.jpg");
+  const { width, height } = await sharp(buf).metadata();
   console.log(`Watermark test image: ${width}x${height}`);
   expect(width).toBeGreaterThan(0);
   expect(height).toBeGreaterThan(0);
@@ -94,7 +80,8 @@ test("WM-02: Watermark test image has valid dimensions", async () => {
 // WM-03: Watermark test image has no large uniform rectangular region
 // -----------------------------------------------------------------------
 test("WM-03: Watermark test image has no large uniform rectangular region", async () => {
-  const uniformBlocks = await countUniformBlocks(readBuffer(WATERMARK_PATH));
+  const buf = await gallery.fetchImage("c-watermark-test.jpg");
+  const uniformBlocks = await countUniformBlocks(buf);
   console.log(`Uniform blocks (variance < 2): ${uniformBlocks}/100`);
   // c-watermark-test.jpg is a mid-tone image — allow up to 80 uniform blocks
   // The key check is that it's not 100% uniform (which would indicate a blank image)
@@ -106,7 +93,8 @@ test("WM-03: Watermark test image has no large uniform rectangular region", asyn
 // -----------------------------------------------------------------------
 test("WM-04: Watermark test image has sufficient tonal variation", async () => {
   const sharp = require("sharp");
-  const { data } = await sharp(readBuffer(WATERMARK_PATH))
+  const buf = await gallery.fetchImage("c-watermark-test.jpg");
+  const { data } = await sharp(buf)
     .greyscale()
     .resize(200, 200, { fit: "fill" })
     .raw()
@@ -128,19 +116,19 @@ test("WM-04: Watermark test image has sufficient tonal variation", async () => {
 // WM-05: All orientation test images are free of uniform watermark blocks
 // -----------------------------------------------------------------------
 test("WM-05: Orientation test images have no uniform watermark blocks", async () => {
-  const files = fs
-    .readdirSync(IMAGES_DIR)
-    .filter((f) => /^(Landscape|Portrait)_\d/.test(f) && f.endsWith(".jpg"));
+  const orientationFiles = await gallery.listFilenames(
+    /^(Landscape|Portrait)_\d.*\.jpg$/,
+  );
 
-  expect(files.length).toBeGreaterThan(0);
-  for (const file of files) {
-    const buffer = fs.readFileSync(path.join(IMAGES_DIR, file));
+  expect(orientationFiles.length).toBeGreaterThan(0);
+  for (const file of orientationFiles) {
+    const buffer = await gallery.fetchImage(file);
     const uniformBlocks = await countUniformBlocks(buffer);
     expect(uniformBlocks, `${file} has too many uniform blocks`).toBeLessThan(
       20,
     );
   }
   console.log(
-    `Checked ${files.length} orientation images for watermark blocks`,
+    `Checked ${orientationFiles.length} orientation images for watermark blocks`,
   );
 });

@@ -1,10 +1,14 @@
 /**
  * WM-01 through WM-05 (API): Watermark Rendering
  *
- * Uploads images to a watermark-enabled gallery and verifies watermark
- * presence for visitors, absence for owners, and scaling across tiers.
+ * Uploads images from local disk to a watermark-enabled gallery and
+ * verifies watermark presence for visitors, absence for owners, and
+ * scaling across tiers.
  *
- * Requires: TEST_ALBUM_KEY, TEST_IMAGES_DIR, authenticated session
+ * Source images are read from TEST_IMAGES_DIR to ensure byte-for-byte
+ * integrity comparisons against a known-good local copy.
+ *
+ * Requires: TEST_IMAGES_DIR, authenticated session
  * Note: Gallery must have watermarking enabled for WM-01/WM-04/WM-05 to be meaningful.
  */
 
@@ -47,8 +51,6 @@ test.describe("WM (API): Watermark Rendering", () => {
     const tiers = await api.getSizeDetails(wmKey);
     console.log(`Watermark flag: ${image.Watermark}`);
     console.log(`Tiers available: ${tiers.map((t) => t.label).join(", ")}`);
-    // If watermarking is enabled on the gallery, the Watermark field should be true
-    // This is informational — watermark presence depends on gallery settings
     for (const tier of tiers) {
       const buf = await api.downloadBuffer(tier.url);
       expect(buf.length).toBeGreaterThan(0);
@@ -64,7 +66,6 @@ test.describe("WM (API): Watermark Rendering", () => {
     const image = await api.getImage(wmKey);
     const sourceBuffer = fs.readFileSync(WATERMARK_PATH);
     const archivedBuffer = await api.downloadBuffer(image.ArchivedUri);
-    // Owner's archived download should match the source exactly
     expect(md5Hex(archivedBuffer)).toBe(md5Hex(sourceBuffer));
   });
 
@@ -76,7 +77,6 @@ test.describe("WM (API): Watermark Rendering", () => {
     const wmKey = await ensureUploaded(api, testAlbumUri);
     const image = await api.getImage(wmKey);
     const sourceSize = fs.statSync(WATERMARK_PATH).size;
-    // Archived size should match source — no watermark added to original
     expect(image.ArchivedSize).toBe(sourceSize);
   });
 
@@ -89,7 +89,6 @@ test.describe("WM (API): Watermark Rendering", () => {
     const tiers = await api.getSizeDetails(wmKey);
     const sharp = require("sharp");
 
-    // Compare two different tier sizes — watermark should be present in both (if enabled)
     const smallTier = tiers.find((t) => t.label === "Th" || t.label === "S");
     const largeTier = tiers.find((t) => t.label === "L" || t.label === "XL");
     if (!smallTier || !largeTier) {
@@ -110,7 +109,6 @@ test.describe("WM (API): Watermark Rendering", () => {
     console.log(
       `Large (${largeTier.label}): ${largeMeta.width}x${largeMeta.height}`,
     );
-    // Both should be valid images
     expect(smallMeta.width).toBeGreaterThan(0);
     expect(largeMeta.width).toBeGreaterThan(0);
   });

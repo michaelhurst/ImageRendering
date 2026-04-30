@@ -8,19 +8,10 @@
  * clearly placed in the top-left quadrant (~25%, 25%).
  */
 
-import { test, expect } from "@playwright/test";
-import * as fs from "fs";
-import * as path from "path";
+import { test, expect } from "../helpers/test-fixtures";
+import { getGalleryImages } from "../helpers/gallery-images";
 
-const IMAGES_DIR =
-  process.env.TEST_IMAGES_DIR || path.join(__dirname, "../Test Images");
-const POI_PATH = path.join(IMAGES_DIR, "c-poi-test.jpg");
-// Use the landscape sizing image as a second reference (known neutral content)
-const REF_PATH = path.join(IMAGES_DIR, "c-sizing-landscape.jpg");
-
-function readBuffer(filePath: string): Buffer {
-  return fs.readFileSync(filePath);
-}
+const gallery = getGalleryImages();
 
 async function findBrightnessCentroid(
   buf: Buffer,
@@ -52,7 +43,8 @@ async function findBrightnessCentroid(
 // -----------------------------------------------------------------------
 test("POI-01: POI test image loads and has valid dimensions", async () => {
   const sharp = require("sharp");
-  const { width, height } = await sharp(readBuffer(POI_PATH)).metadata();
+  const buf = await gallery.fetchImage("c-poi-test.jpg");
+  const { width, height } = await sharp(buf).metadata();
   expect(width).toBeGreaterThan(0);
   expect(height).toBeGreaterThan(0);
   console.log(`POI image: ${width}x${height}`);
@@ -62,7 +54,8 @@ test("POI-01: POI test image loads and has valid dimensions", async () => {
 // POI-02: POI image brightness centroid is within image bounds
 // -----------------------------------------------------------------------
 test("POI-02: POI image brightness centroid is within image bounds", async () => {
-  const { cx, cy } = await findBrightnessCentroid(readBuffer(POI_PATH));
+  const buf = await gallery.fetchImage("c-poi-test.jpg");
+  const { cx, cy } = await findBrightnessCentroid(buf);
   console.log(`POI centroid: (${cx.toFixed(3)}, ${cy.toFixed(3)})`);
   expect(cx).toBeGreaterThan(0);
   expect(cx).toBeLessThan(1);
@@ -74,7 +67,8 @@ test("POI-02: POI image brightness centroid is within image bounds", async () =>
 // POI-03: Reference image brightness centroid is within image bounds
 // -----------------------------------------------------------------------
 test("POI-03: Reference image brightness centroid is within image bounds", async () => {
-  const { cx, cy } = await findBrightnessCentroid(readBuffer(REF_PATH));
+  const buf = await gallery.fetchImage("c-sizing-landscape.jpg");
+  const { cx, cy } = await findBrightnessCentroid(buf);
   console.log(`Reference centroid: (${cx.toFixed(3)}, ${cy.toFixed(3)})`);
   expect(cx).toBeGreaterThan(0);
   expect(cx).toBeLessThan(1);
@@ -86,7 +80,8 @@ test("POI-03: Reference image brightness centroid is within image bounds", async
 // POI-04: POI image centroid is in the top-left quadrant (subject placement)
 // -----------------------------------------------------------------------
 test("POI-04: POI image brightness centroid is in the top-left quadrant", async () => {
-  const { cx, cy } = await findBrightnessCentroid(readBuffer(POI_PATH));
+  const buf = await gallery.fetchImage("c-poi-test.jpg");
+  const { cx, cy } = await findBrightnessCentroid(buf);
   console.log(`POI centroid: (${cx.toFixed(3)}, ${cy.toFixed(3)})`);
   // Subject is placed at ~25%, 25% — centroid should be in the left half and top half
   expect(cx).toBeLessThan(0.6);
@@ -98,7 +93,8 @@ test("POI-04: POI image brightness centroid is in the top-left quadrant", async 
 // -----------------------------------------------------------------------
 test("POI-05: POI image center region is not blank", async () => {
   const sharp = require("sharp");
-  const { data, info } = await sharp(readBuffer(POI_PATH))
+  const buf = await gallery.fetchImage("c-poi-test.jpg");
+  const { data, info } = await sharp(buf)
     .greyscale()
     .resize(100, 100, { fit: "fill" })
     .raw()

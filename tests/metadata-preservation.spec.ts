@@ -2,29 +2,22 @@
  * MP-01 through MP-10: Metadata Preservation
  *
  * Verifies that key EXIF/IPTC metadata fields are present and consistent
- * in local test images. Uses metadata-rich.jpg as the reference source.
+ * in images from the SmugMug baseline gallery.
+ * Uses metadata-rich.jpg as the reference source.
  */
 
-import { test, expect } from "@playwright/test";
-import * as fs from "fs";
-import * as path from "path";
+import { test, expect } from "../helpers/test-fixtures";
+import { getGalleryImages } from "../helpers/gallery-images";
 
-const IMAGES_DIR =
-  process.env.TEST_IMAGES_DIR || path.join(__dirname, "../Test Images");
-const RICH_PATH = path.join(IMAGES_DIR, "metadata-rich.jpg");
-const IPTC_PATH = path.join(IMAGES_DIR, "metadata-iptc.jpg");
-const STRIPPED_PATH = path.join(IMAGES_DIR, "metadata-stripped.jpg");
-
-function readBuffer(filePath: string): Buffer {
-  return fs.readFileSync(filePath);
-}
+const gallery = getGalleryImages();
 
 // -----------------------------------------------------------------------
 // MP-01: Camera make is present in metadata-rich.jpg
 // -----------------------------------------------------------------------
 test("MP-01: Camera make is present in metadata-rich.jpg", async () => {
   const exifr = require("exifr");
-  const exif = await exifr.parse(readBuffer(RICH_PATH), { pick: ["Make"] });
+  const buf = await gallery.fetchImage("metadata-rich.jpg");
+  const exif = await exifr.parse(buf, { pick: ["Make"] });
   expect(exif?.Make).toBeTruthy();
   console.log(`Make: ${exif?.Make}`);
 });
@@ -34,7 +27,8 @@ test("MP-01: Camera make is present in metadata-rich.jpg", async () => {
 // -----------------------------------------------------------------------
 test("MP-02: Camera model is present in metadata-rich.jpg", async () => {
   const exifr = require("exifr");
-  const exif = await exifr.parse(readBuffer(RICH_PATH), { pick: ["Model"] });
+  const buf = await gallery.fetchImage("metadata-rich.jpg");
+  const exif = await exifr.parse(buf, { pick: ["Model"] });
   expect(exif?.Model).toBeTruthy();
   console.log(`Model: ${exif?.Model}`);
 });
@@ -44,9 +38,8 @@ test("MP-02: Camera model is present in metadata-rich.jpg", async () => {
 // -----------------------------------------------------------------------
 test("MP-03: Exposure time is present in metadata-rich.jpg", async () => {
   const exifr = require("exifr");
-  const exif = await exifr.parse(readBuffer(RICH_PATH), {
-    pick: ["ExposureTime"],
-  });
+  const buf = await gallery.fetchImage("metadata-rich.jpg");
+  const exif = await exifr.parse(buf, { pick: ["ExposureTime"] });
   expect(exif?.ExposureTime).toBeDefined();
   expect(exif?.ExposureTime).toBeGreaterThan(0);
   console.log(`ExposureTime: ${exif?.ExposureTime}`);
@@ -57,7 +50,8 @@ test("MP-03: Exposure time is present in metadata-rich.jpg", async () => {
 // -----------------------------------------------------------------------
 test("MP-04: Aperture (FNumber) is present in metadata-rich.jpg", async () => {
   const exifr = require("exifr");
-  const exif = await exifr.parse(readBuffer(RICH_PATH), { pick: ["FNumber"] });
+  const buf = await gallery.fetchImage("metadata-rich.jpg");
+  const exif = await exifr.parse(buf, { pick: ["FNumber"] });
   expect(exif?.FNumber).toBeDefined();
   expect(exif?.FNumber).toBeGreaterThan(0);
   console.log(`FNumber: ${exif?.FNumber}`);
@@ -68,7 +62,8 @@ test("MP-04: Aperture (FNumber) is present in metadata-rich.jpg", async () => {
 // -----------------------------------------------------------------------
 test("MP-05: ISO is present in metadata-rich.jpg", async () => {
   const exifr = require("exifr");
-  const exif = await exifr.parse(readBuffer(RICH_PATH), {
+  const buf = await gallery.fetchImage("metadata-rich.jpg");
+  const exif = await exifr.parse(buf, {
     pick: ["ISO", "ISOSpeedRatings"],
   });
   const hasISO = exif?.ISO !== undefined || exif?.ISOSpeedRatings !== undefined;
@@ -81,9 +76,8 @@ test("MP-05: ISO is present in metadata-rich.jpg", async () => {
 // -----------------------------------------------------------------------
 test("MP-06: Focal length is present in metadata-rich.jpg", async () => {
   const exifr = require("exifr");
-  const exif = await exifr.parse(readBuffer(RICH_PATH), {
-    pick: ["FocalLength"],
-  });
+  const buf = await gallery.fetchImage("metadata-rich.jpg");
+  const exif = await exifr.parse(buf, { pick: ["FocalLength"] });
   expect(exif?.FocalLength).toBeDefined();
   expect(exif?.FocalLength).toBeGreaterThan(0);
   console.log(`FocalLength: ${exif?.FocalLength}`);
@@ -94,9 +88,8 @@ test("MP-06: Focal length is present in metadata-rich.jpg", async () => {
 // -----------------------------------------------------------------------
 test("MP-07: DateTimeOriginal is present in metadata-rich.jpg", async () => {
   const exifr = require("exifr");
-  const exif = await exifr.parse(readBuffer(RICH_PATH), {
-    pick: ["DateTimeOriginal"],
-  });
+  const buf = await gallery.fetchImage("metadata-rich.jpg");
+  const exif = await exifr.parse(buf, { pick: ["DateTimeOriginal"] });
   expect(exif?.DateTimeOriginal).toBeDefined();
   const d = new Date(exif.DateTimeOriginal);
   expect(isNaN(d.getTime())).toBe(false);
@@ -108,7 +101,8 @@ test("MP-07: DateTimeOriginal is present in metadata-rich.jpg", async () => {
 // -----------------------------------------------------------------------
 test("MP-08: metadata-stripped.jpg has no camera EXIF fields", async () => {
   const exifr = require("exifr");
-  const exif = await exifr.parse(readBuffer(STRIPPED_PATH), {
+  const buf = await gallery.fetchImage("metadata-stripped.jpg");
+  const exif = await exifr.parse(buf, {
     pick: ["Make", "Model", "ISO", "FNumber", "ExposureTime"],
   });
   const present = ["Make", "Model", "ISO", "FNumber", "ExposureTime"].filter(
@@ -123,7 +117,8 @@ test("MP-08: metadata-stripped.jpg has no camera EXIF fields", async () => {
 // -----------------------------------------------------------------------
 test("MP-09: metadata-iptc.jpg has IPTC metadata present", async () => {
   const exifr = require("exifr");
-  const data = await exifr.parse(readBuffer(IPTC_PATH), {
+  const buf = await gallery.fetchImage("metadata-iptc.jpg");
+  const data = await exifr.parse(buf, {
     iptc: true,
     all: true,
   });
@@ -136,18 +131,18 @@ test("MP-09: metadata-iptc.jpg has IPTC metadata present", async () => {
 // -----------------------------------------------------------------------
 test("MP-10: All orientation test images are valid and readable", async () => {
   const sharp = require("sharp");
-  const files = fs
-    .readdirSync(IMAGES_DIR)
-    .filter((f) => /^(Landscape|Portrait)_\d/.test(f) && f.endsWith(".jpg"));
+  const orientationFiles = await gallery.listFilenames(
+    /^(Landscape|Portrait)_\d.*\.jpg$/,
+  );
 
-  expect(files.length).toBeGreaterThan(0);
-  for (const file of files) {
-    const buf = fs.readFileSync(path.join(IMAGES_DIR, file));
+  expect(orientationFiles.length).toBeGreaterThan(0);
+  for (const file of orientationFiles) {
+    const buf = await gallery.fetchImage(file);
     expect(buf[0]).toBe(0xff);
     expect(buf[1]).toBe(0xd8);
     const { width, height } = await sharp(buf).metadata();
     expect(width).toBeGreaterThan(0);
     expect(height).toBeGreaterThan(0);
   }
-  console.log(`Verified ${files.length} orientation test images`);
+  console.log(`Verified ${orientationFiles.length} orientation test images`);
 });

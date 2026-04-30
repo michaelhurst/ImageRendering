@@ -34,12 +34,12 @@ image-display-tests/
 
 ### Key Dependencies
 
-| Library | Purpose |
-|---------|---------|
-| `@playwright/test` | Browser automation and test runner |
-| `sharp` | Image decoding, resizing, pixel access, metadata |
-| `exifr` | EXIF/IPTC/XMP parsing from files and buffers |
-| `dotenv` | Environment variable management |
+| Library            | Purpose                                          |
+| ------------------ | ------------------------------------------------ |
+| `@playwright/test` | Browser automation and test runner               |
+| `sharp`            | Image decoding, resizing, pixel access, metadata |
+| `exifr`            | EXIF/IPTC/XMP parsing from files and buffers     |
+| `dotenv`           | Environment variable management                  |
 
 ---
 
@@ -102,9 +102,11 @@ Tests that require both perspectives construct two API client instances and comp
 ## Image Analysis Techniques
 
 ### SSIM (Structural Similarity Index)
+
 Used to compare overall image quality between SmugMug-served tiers and locally generated references. Both images are normalized to the same dimensions and converted to grayscale before computing luminance, contrast, and structure components. Score range: 0.0 (completely different) to 1.0 (identical).
 
 **Thresholds:**
+
 - General quality: ≥ 0.92
 - Orientation match: ≥ 0.90
 - No double-compression: ≥ 0.90
@@ -112,26 +114,33 @@ Used to compare overall image quality between SmugMug-served tiers and locally g
 - Untagged vs sRGB match: ≥ 0.98
 
 ### Delta-E Color Difference
+
 Used to measure perceptual color accuracy at known pixel coordinates. A companion JSON file for each color reference image lists `{x, y, r, g, b}` sample points. Pixel coordinates are scaled proportionally when comparing to resized tiers.
 
 **Thresholds:**
+
 - sRGB samples: Delta-E < 5
 - Adobe RGB / ProPhoto conversions: Delta-E < 10
 - Black/white endpoints: Delta-E < 8
 
 ### Pixel Sampling
+
 Exact pixel RGB values are read at specific coordinates using `sharp`'s raw buffer extraction. Used for grayscale ramp step accuracy (luminance within ±5) and color patch verification.
 
 ### Laplacian Variance (Sharpness)
+
 A 3×3 Laplacian kernel is applied to the grayscale image. The variance of the resulting values measures edge energy. Higher = sharper. Minimum threshold: 50.
 
 ### Gradient Smoothness (Banding Detection)
+
 Adjacent pixel luminance differences are sampled along the middle horizontal row. The standard deviation of those differences measures smoothness. StdDev < 3.0 indicates no banding.
 
 ### Watermark Detection
+
 The owner's (clean) and visitor's (watermarked) versions of the same tier are compared pixel-by-pixel. Pixels differing by more than a threshold in any channel are counted. A diff > 1% of total pixels indicates a watermark is present.
 
 ### MD5 Hash
+
 Used for exact byte-level verification of original downloads against source files. Computed using Node's built-in `crypto` module.
 
 ---
@@ -141,21 +150,24 @@ Used for exact byte-level verification of original downloads against source file
 Each test group requires specific reference images placed in `reference-images/`. Images must have **known, documented properties** — the tests assert against those known values, not against dynamically computed baselines.
 
 ### Color reference images
+
 Each color-checker image ships with a companion `.json` file listing pixel sample coordinates and expected RGB values. Coordinates are specified at the original resolution; tests scale them proportionally for each size tier.
 
 ```json
 // color-checker-srgb.json — example
 [
-  { "x": 120, "y": 80, "r": 115, "g": 82,  "b": 68  },
+  { "x": 120, "y": 80, "r": 115, "g": 82, "b": 68 },
   { "x": 240, "y": 80, "r": 194, "g": 150, "b": 130 },
-  { "x": 360, "y": 80, "r": 98,  "g": 122, "b": 157 }
+  { "x": 360, "y": 80, "r": 98, "g": 122, "b": 157 }
 ]
 ```
 
 ### Orientation reference images
+
 Eight images (`orientation-1.jpg` through `orientation-8.jpg`) contain identical visual content (e.g., an upward arrow with "TOP" text) but with different EXIF orientation tags applied. `orientation-reference.jpg` is the ground truth — tag 1, correctly oriented.
 
 ### Metadata reference images
+
 `metadata-rich.jpg` must contain populated values for all key EXIF fields: Make, Model, ExposureTime, FNumber, ISOSpeedRatings, FocalLength, DateTimeOriginal, GPS, LensModel, WhiteBalance, Flash, Copyright, Artist, UserComment.
 
 ---
@@ -164,13 +176,11 @@ Eight images (`orientation-1.jpg` through `orientation-8.jpg`) contain identical
 
 All environment-specific values are injected via `.env` and never hardcoded in tests. The `.env.example` file documents all required variables. Key variables:
 
-| Variable | Used By |
-|----------|---------|
-| `TEST_ALBUM_KEY` | All upload-based tests |
-| `SMUGMUG_API_KEY` | Unauthenticated (visitor) API calls |
-| `TEST_WATERMARK_ALBUM_KEY` | WM-01 through WM-05 |
-| `TEST_CAPPED_ALBUM_KEY` | RC-01 through RC-04 |
-| `TEST_RESOLUTION_CAP_MAX` | RC-01 expected edge maximum |
+| Variable                  | Used By                                      |
+| ------------------------- | -------------------------------------------- |
+| `ENVIRONMENT`             | All tests — must be `inside` or `production` |
+| `SMUGMUG_API_KEY`         | Unauthenticated (visitor) API calls          |
+| `TEST_RESOLUTION_CAP_MAX` | RC-01 expected edge maximum                  |
 
 ---
 

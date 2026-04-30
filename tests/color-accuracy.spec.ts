@@ -1,45 +1,35 @@
 /**
  * CL-01 through CL-10: Color Accuracy & Profiles
  *
- * Uses dedicated color test images with companion JSON files
- * that specify pixel coordinates and expected RGB values.
+ * Uses dedicated color test images from the SmugMug baseline gallery
+ * with companion JSON files (stored locally) that specify pixel
+ * coordinates and expected RGB values.
  *
- * Set TEST_IMAGES_DIR in .env to point at your local test images folder.
+ * JSON sidecar files are read from TEST_IMAGES_DIR.
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../helpers/test-fixtures";
 import * as fs from "fs";
 import * as path from "path";
+import { getGalleryImages } from "../helpers/gallery-images";
 
-const IMAGES_DIR =
+const gallery = getGalleryImages();
+
+// JSON sidecar files stay local — they can't be uploaded to SmugMug
+const JSON_DIR =
   process.env.TEST_IMAGES_DIR || path.join(__dirname, "../Test Images");
 
-const SRGB_PATH = path.join(IMAGES_DIR, "c-color-checker-srgb.jpg");
-const ADOBERGB_PATH = path.join(IMAGES_DIR, "c-color-checker-adobergb.jpg");
-const PROPHOTO_PATH = path.join(IMAGES_DIR, "c-color-checker-prophoto.jpg");
-const ICC_CUSTOM_PATH = path.join(IMAGES_DIR, "c-color-icc-custom.jpg");
-const UNTAGGED_PATH = path.join(IMAGES_DIR, "c-color-untagged.jpg");
-const CMYK_PATH = path.join(IMAGES_DIR, "c-color-cmyk.jpg");
-const GRADIENT_PATH = path.join(IMAGES_DIR, "c-color-16bit-gradient.tiff");
-const BW_PATH = path.join(IMAGES_DIR, "c-color-blackwhite.jpg");
-const GRAYSCALE_PATH = path.join(IMAGES_DIR, "c-color-grayscale-ramp.jpg");
-const SATURATED_PATH = path.join(IMAGES_DIR, "c-color-saturated-patches.jpg");
-
-const SRGB_JSON = path.join(IMAGES_DIR, "c-color-checker-srgb.json");
-const ADOBERGB_JSON = path.join(IMAGES_DIR, "c-color-checker-adobergb.json");
-const PROPHOTO_JSON = path.join(IMAGES_DIR, "c-color-checker-prophoto.json");
-const BW_JSON = path.join(IMAGES_DIR, "c-color-blackwhite.json");
-const GRAYSCALE_JSON = path.join(IMAGES_DIR, "c-color-grayscale-ramp.json");
-const SATURATED_JSON = path.join(IMAGES_DIR, "c-color-saturated-patches.json");
+const SRGB_JSON = path.join(JSON_DIR, "c-color-checker-srgb.json");
+const ADOBERGB_JSON = path.join(JSON_DIR, "c-color-checker-adobergb.json");
+const PROPHOTO_JSON = path.join(JSON_DIR, "c-color-checker-prophoto.json");
+const BW_JSON = path.join(JSON_DIR, "c-color-blackwhite.json");
+const GRAYSCALE_JSON = path.join(JSON_DIR, "c-color-grayscale-ramp.json");
+const SATURATED_JSON = path.join(JSON_DIR, "c-color-saturated-patches.json");
 
 const MAX_DELTA_E = 10;
 const MAX_DELTA_E_STRICT = 5;
 // Wider gamut images (Adobe RGB, ProPhoto) have larger conversion errors
 const MAX_DELTA_E_WIDE_GAMUT = 25;
-
-function readBuffer(filePath: string): Buffer {
-  return fs.readFileSync(filePath);
-}
 
 function toLinear(c: number): number {
   const s = c / 255;
@@ -104,7 +94,7 @@ async function samplePixel(
 // CL-01: sRGB color checker — patch colors within strict Delta-E
 // -----------------------------------------------------------------------
 test("CL-01: sRGB color checker patches match expected RGB values", async () => {
-  const buffer = readBuffer(SRGB_PATH);
+  const buffer = await gallery.fetchImage("c-color-checker-srgb.jpg");
   const patches = JSON.parse(fs.readFileSync(SRGB_JSON, "utf8")).patches;
   const failures: string[] = [];
 
@@ -129,7 +119,7 @@ test("CL-01: sRGB color checker patches match expected RGB values", async () => 
 // CL-02: Adobe RGB color checker — sRGB-converted targets within Delta-E
 // -----------------------------------------------------------------------
 test("CL-02: Adobe RGB color checker patches within Delta-E of sRGB targets", async () => {
-  const buffer = readBuffer(ADOBERGB_PATH);
+  const buffer = await gallery.fetchImage("c-color-checker-adobergb.jpg");
   const patches = JSON.parse(fs.readFileSync(ADOBERGB_JSON, "utf8")).patches;
   const failures: string[] = [];
 
@@ -152,7 +142,7 @@ test("CL-02: Adobe RGB color checker patches within Delta-E of sRGB targets", as
 // CL-03: ProPhoto RGB color checker — sRGB-converted targets within Delta-E
 // -----------------------------------------------------------------------
 test("CL-03: ProPhoto RGB color checker patches within Delta-E of sRGB targets", async () => {
-  const buffer = readBuffer(PROPHOTO_PATH);
+  const buffer = await gallery.fetchImage("c-color-checker-prophoto.jpg");
   const patches = JSON.parse(fs.readFileSync(PROPHOTO_JSON, "utf8")).patches;
   const failures: string[] = [];
 
@@ -176,7 +166,8 @@ test("CL-03: ProPhoto RGB color checker patches within Delta-E of sRGB targets",
 // -----------------------------------------------------------------------
 test("CL-04: Custom ICC profile image has embedded ICC profile", async () => {
   const sharp = require("sharp");
-  const meta = await sharp(readBuffer(ICC_CUSTOM_PATH)).metadata();
+  const buf = await gallery.fetchImage("c-color-icc-custom.jpg");
+  const meta = await sharp(buf).metadata();
   expect(meta.icc, "Expected ICC profile to be present").toBeTruthy();
   console.log(`CL-04: ICC profile present, color space: ${meta.space}`);
 });
@@ -186,7 +177,8 @@ test("CL-04: Custom ICC profile image has embedded ICC profile", async () => {
 // -----------------------------------------------------------------------
 test("CL-05: Untagged image has no embedded ICC profile", async () => {
   const sharp = require("sharp");
-  const meta = await sharp(readBuffer(UNTAGGED_PATH)).metadata();
+  const buf = await gallery.fetchImage("c-color-untagged.jpg");
+  const meta = await sharp(buf).metadata();
   expect(meta.icc, "Expected no ICC profile").toBeFalsy();
   console.log(`CL-05: No ICC profile, color space reported as: ${meta.space}`);
 });
@@ -196,7 +188,8 @@ test("CL-05: Untagged image has no embedded ICC profile", async () => {
 // -----------------------------------------------------------------------
 test("CL-06: CMYK image is detected as CMYK color space", async () => {
   const sharp = require("sharp");
-  const meta = await sharp(readBuffer(CMYK_PATH)).metadata();
+  const buf = await gallery.fetchImage("c-color-cmyk.jpg");
+  const meta = await sharp(buf).metadata();
   expect(meta.space).toBe("cmyk");
   console.log(`CL-06: Color space: ${meta.space}, channels: ${meta.channels}`);
 });
@@ -206,7 +199,8 @@ test("CL-06: CMYK image is detected as CMYK color space", async () => {
 // -----------------------------------------------------------------------
 test("CL-07: 16-bit gradient has smooth tonal transitions", async () => {
   const sharp = require("sharp");
-  const { data, info } = await sharp(readBuffer(GRADIENT_PATH))
+  const buf = await gallery.fetchImage("c-color-16bit-gradient.tiff");
+  const { data, info } = await sharp(buf)
     .greyscale()
     .raw()
     .toBuffer({ resolveWithObject: true });
@@ -226,7 +220,7 @@ test("CL-07: 16-bit gradient has smooth tonal transitions", async () => {
 // CL-08: Black/white point image — pure black and white at known coords
 // -----------------------------------------------------------------------
 test("CL-08: Black and white point pixels match expected values", async () => {
-  const buffer = readBuffer(BW_PATH);
+  const buffer = await gallery.fetchImage("c-color-blackwhite.jpg");
   const patches = JSON.parse(fs.readFileSync(BW_JSON, "utf8")).patches;
   const failures: string[] = [];
 
@@ -248,7 +242,7 @@ test("CL-08: Black and white point pixels match expected values", async () => {
 // CL-09: Grayscale ramp — each step within tolerance of expected luminance
 // -----------------------------------------------------------------------
 test("CL-09: Grayscale ramp steps match expected luminance values", async () => {
-  const buffer = readBuffer(GRAYSCALE_PATH);
+  const buffer = await gallery.fetchImage("c-color-grayscale-ramp.jpg");
   const patches = JSON.parse(fs.readFileSync(GRAYSCALE_JSON, "utf8")).patches;
   const failures: string[] = [];
   const LUMA_TOLERANCE = 15;
@@ -274,7 +268,7 @@ test("CL-09: Grayscale ramp steps match expected luminance values", async () => 
 // CL-10: Saturated patches — R/G/B/C/M/Y within strict Delta-E
 // -----------------------------------------------------------------------
 test("CL-10: Saturated color patches match expected RGB values", async () => {
-  const buffer = readBuffer(SATURATED_PATH);
+  const buffer = await gallery.fetchImage("c-color-saturated-patches.jpg");
   const patches = JSON.parse(fs.readFileSync(SATURATED_JSON, "utf8")).patches;
   const failures: string[] = [];
 

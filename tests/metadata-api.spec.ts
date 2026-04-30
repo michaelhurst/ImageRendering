@@ -1,30 +1,25 @@
 /**
  * MA-01 through MA-03: Metadata API Accuracy (Local)
  *
- * Verifies that EXIF metadata fields are correctly present in local
- * test images. Stripped/IPTC checks live in metadata-preservation.spec.ts.
+ * Verifies that EXIF metadata fields are correctly present in images
+ * from the SmugMug baseline gallery.
+ * Stripped/IPTC checks live in metadata-preservation.spec.ts.
  *
  *   BASELINE — metadata-rich.jpg (full EXIF)
  */
 
-import { test, expect } from "@playwright/test";
-import * as fs from "fs";
-import * as path from "path";
+import { test, expect } from "../helpers/test-fixtures";
+import { getGalleryImages } from "../helpers/gallery-images";
 
-const IMAGES_DIR =
-  process.env.TEST_IMAGES_DIR || path.join(__dirname, "../Test Images");
-const BASELINE_PATH = path.join(IMAGES_DIR, "metadata-rich.jpg");
-
-function readBuffer(filePath: string): Buffer {
-  return fs.readFileSync(filePath);
-}
+const gallery = getGalleryImages();
 
 // -----------------------------------------------------------------------
 // MA-01: metadata-rich.jpg EXIF contains required fields
 // -----------------------------------------------------------------------
 test("MA-01: metadata-rich.jpg EXIF contains required fields", async () => {
   const exifr = require("exifr");
-  const exif = await exifr.parse(readBuffer(BASELINE_PATH), { all: true });
+  const buf = await gallery.fetchImage("metadata-rich.jpg");
+  const exif = await exifr.parse(buf, { all: true });
   expect(exif).not.toBeNull();
 
   const requiredFields = [
@@ -44,7 +39,8 @@ test("MA-01: metadata-rich.jpg EXIF contains required fields", async () => {
 // -----------------------------------------------------------------------
 test("MA-02: metadata-rich.jpg image format is JPEG", async () => {
   const sharp = require("sharp");
-  const { format } = await sharp(readBuffer(BASELINE_PATH)).metadata();
+  const buf = await gallery.fetchImage("metadata-rich.jpg");
+  const { format } = await sharp(buf).metadata();
   expect(format).toBe("jpeg");
 });
 
@@ -53,7 +49,8 @@ test("MA-02: metadata-rich.jpg image format is JPEG", async () => {
 // -----------------------------------------------------------------------
 test("MA-03: metadata-rich.jpg EXIF DateTimeOriginal is a valid date", async () => {
   const exifr = require("exifr");
-  const exif = await exifr.parse(readBuffer(BASELINE_PATH), {
+  const buf = await gallery.fetchImage("metadata-rich.jpg");
+  const exif = await exifr.parse(buf, {
     pick: ["DateTimeOriginal"],
   });
   if (exif?.DateTimeOriginal) {

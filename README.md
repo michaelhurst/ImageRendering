@@ -23,66 +23,90 @@ cp .env.example .env
 
 Fill in your `.env` file:
 
-| Variable                     | Description                                        |
-| ---------------------------- | -------------------------------------------------- |
-| `ENVIRONMENT`                | `inside` or `production`                           |
-| `INSIDE_AUTH_USER`           | HTTP Basic Auth username for inside.smugmug.net    |
-| `INSIDE_AUTH_PASS`           | HTTP Basic Auth password                           |
-| `SMUGMUG_QA_USERNAME`        | SmugMug login username                             |
-| `SMUGMUG_QA_PASSWORD`        | SmugMug login password                             |
-| `SMUGMUG_API_KEY`            | SmugMug API key (OAuth 1.0a)                       |
-| `SMUGMUG_API_SECRET`         | SmugMug API secret                                 |
-| `SMUGMUG_OAUTH_TOKEN`        | OAuth token                                        |
-| `SMUGMUG_OAUTH_TOKEN_SECRET` | OAuth token secret                                 |
-| `TEST_ALBUM_KEY`             | Pre-seeded album key for upload tests              |
-| `TEST_NICKNAME`              | Test account nickname (default: `qa-pro`)          |
-| `TEST_IMAGES_DIR`            | Absolute path to local test images folder          |
-| `TEST_RESOLUTION_CAP_MAX`    | Optional max longest edge for resolution cap tests |
+| Variable                     | Required  | Description                                                    |
+| ---------------------------- | --------- | -------------------------------------------------------------- |
+| `ENVIRONMENT`                | **Yes**   | `inside` or `production` — see [Running Tests](#running-tests) |
+| `INSIDE_AUTH_USER`           | inside    | HTTP Basic Auth username for inside.smugmug.net                |
+| `INSIDE_AUTH_PASS`           | inside    | HTTP Basic Auth password                                       |
+| `SMUGMUG_QA_PASSWORD`        | API tests | SmugMug login password                                         |
+| `SMUGMUG_API_KEY`            | API tests | SmugMug API key (OAuth 1.0a)                                   |
+| `SMUGMUG_API_SECRET`         | API tests | SmugMug API secret                                             |
+| `SMUGMUG_OAUTH_TOKEN`        | API tests | OAuth token                                                    |
+| `SMUGMUG_OAUTH_TOKEN_SECRET` | API tests | OAuth token secret                                             |
+| `TEST_IMAGES_DIR`            | Yes       | Absolute path to local test images folder                      |
+| `TEST_RESOLUTION_CAP_MAX`    | No        | Optional max longest edge for resolution cap tests             |
+
+> **Note:** `ENVIRONMENT` has no default. Tests will refuse to start until you set it to either `inside` or `production`.
+
+> **Test account:** All tests use the shared account `automated+render-testing@smugmug.com` (nickname: `automated-render-testing`). The username and nickname are hardcoded — only the password needs to be configured.
+
+> **Baseline images gallery:** The reference images that define how images should be displayed are hosted on SmugMug:
+>
+> - **Production:** https://automated-render-testing.smugmug.com/Baseline-Images
+> - **Inside:** https://automated-render-testing.inside.smugmug.net/Baseline-Images
+>
+> Tests use the `baselineGalleryUrl` fixture to get the correct URL for the current environment.
 
 ---
 
 ## Running Tests
 
+Every test run targets a specific environment. There is no default — you must choose either **inside** (`inside.smugmug.net`) or **production** (`smugmug.com`).
+
+### Quick start
+
 ```bash
-# Run all tests
-npm test
+# Run all tests against inside.smugmug.net
+npm run test:inside
 
-# Run specific test suites
-npm run test:render
-npm run test:quality
-npm run test:color
-npm run test:sizing
-npm run test:orientation
-npm run test:metadata-preservation
-npm run test:metadata-display
-npm run test:metadata-api
-npm run test:poi
-npm run test:watermark
-npm run test:resolution-cap
+# Run all tests against smugmug.com
+npm run test:production
+```
 
-# Run only local file validation tests
-npm run test:local
+### Run a subset
 
-# Run only SmugMug API tests (requires credentials)
-npm run test:smugmug
+```bash
+# Local-only tests (no SmugMug credentials needed)
+npm run test:inside:local
+npm run test:production:local
 
-# Run individual API test suites
-npm run test:api-quality
-npm run test:api-sizing
-npm run test:api-orientation
-npm run test:api-metadata
-npm run test:api-metadata-display
-npm run test:api-metadata-api
-npm run test:api-poi
-npm run test:api-watermark
-npm run test:api-resolution-cap
+# SmugMug API tests only (requires credentials)
+npm run test:inside:smugmug
+npm run test:production:smugmug
+```
 
-# Update snapshots
+### Run a single spec file
+
+Append `-- <path>` to any environment command:
+
+```bash
+npm run test:inside -- tests/image-render.spec.ts
+npm run test:production -- tests/api-image-sizing.spec.ts
+```
+
+### Other commands
+
+```bash
+# Update visual snapshots
 npm run test:update
 
-# View HTML report
+# View the HTML report from the last run
 npm run test:report
 ```
+
+### Setting the environment via `.env`
+
+Instead of using the `test:inside` / `test:production` scripts, you can set `ENVIRONMENT` in your `.env` file and run Playwright directly:
+
+```bash
+# In .env:
+ENVIRONMENT=inside
+
+# Then:
+npx playwright test
+```
+
+If `ENVIRONMENT` is not set (and you're not using one of the named scripts), Playwright will exit with an error telling you to pick one.
 
 ---
 
@@ -93,7 +117,7 @@ All tests read images from the `TEST_IMAGES_DIR` environment variable.
 ### Local Tests
 
 Local tests validate test image properties directly from disk — no SmugMug credentials needed.
-Run with `npm run test:local`.
+Run with `npm run test:inside:local` or `npm run test:production:local`.
 
 ---
 
@@ -510,7 +534,7 @@ _Checks that orientation processing doesn't accidentally introduce watermark-lik
 ### SmugMug API Tests
 
 API tests upload images to SmugMug and verify the processing pipeline preserves quality, metadata, orientation, and sizing.
-Run with `npm run test:smugmug`. Requires `TEST_ALBUM_KEY` and SmugMug credentials in `.env`.
+Run with `npm run test:inside:smugmug` or `npm run test:production:smugmug`. Requires `TEST_IMAGES_DIR` and SmugMug credentials in `.env`. A fresh album is created automatically for each test run.
 
 ---
 

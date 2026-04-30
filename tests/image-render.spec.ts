@@ -3,22 +3,19 @@
  *
  * Verifies that the candidate image renders correctly in a browser
  * at each SmugMug size tier viewport. Uses c-sizing-landscape.jpg
- * (400KB, 6000x4000) as the test image — small enough for data URLs.
+ * (6000x4000) fetched from the SmugMug baseline gallery.
  *
  * Baseline screenshots are generated on first run and saved to
  * tests/baselines/. Delete a baseline PNG to regenerate it.
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../helpers/test-fixtures";
 import * as fs from "fs";
 import * as path from "path";
+import { getGalleryImages } from "../helpers/gallery-images";
 
-const IMAGES_DIR =
-  process.env.TEST_IMAGES_DIR || path.join(__dirname, "../Test Images");
+const gallery = getGalleryImages();
 const BASELINE_DIR = path.join(__dirname, "baselines");
-
-// Use the sizing landscape image — it's a known 6000x4000 JPEG, ~2MB, manageable as a data URL
-const TEST_IMAGE_PATH = path.join(IMAGES_DIR, "c-sizing-landscape.jpg");
 
 const viewports = [
   { name: "Ti", width: 100, height: 75 },
@@ -36,13 +33,6 @@ const viewports = [
   { name: "O", width: 1280, height: 720 },
 ];
 
-function fileToDataUrl(filePath: string): string {
-  const buffer = fs.readFileSync(filePath);
-  const ext = path.extname(filePath).toLowerCase().slice(1);
-  const mime = ext === "png" ? "image/png" : "image/jpeg";
-  return `data:${mime};base64,${buffer.toString("base64")}`;
-}
-
 async function loadImage(page: any, dataUrl: string): Promise<void> {
   await page.setContent(
     `<html><body style="margin:0;padding:0;background:#000"><img id="img" src="${dataUrl}" style="max-width:100%;max-height:100vh;display:block"></body></html>`,
@@ -53,10 +43,13 @@ async function loadImage(page: any, dataUrl: string): Promise<void> {
   });
 }
 
-// Cache the data URL — only read the file once across all tests
+// Cache the data URL — only fetch the image once across all tests
 let _dataUrl: string | null = null;
-function getDataUrl(): string {
-  if (!_dataUrl) _dataUrl = fileToDataUrl(TEST_IMAGE_PATH);
+async function getDataUrl(): Promise<string> {
+  if (!_dataUrl) {
+    const buf = await gallery.fetchImage("c-sizing-landscape.jpg");
+    _dataUrl = gallery.bufferToDataUrl(buf, "c-sizing-landscape.jpg");
+  }
   return _dataUrl;
 }
 
@@ -69,7 +62,7 @@ for (const { name, width, height } of viewports) {
   }) => {
     const page = await browser.newPage({ viewport: { width, height } });
     try {
-      await loadImage(page, getDataUrl());
+      await loadImage(page, await getDataUrl());
       const loaded = await page.evaluate(
         () =>
           (document.getElementById("img") as HTMLImageElement).naturalWidth > 0,
@@ -90,7 +83,7 @@ for (const { name, width, height } of viewports) {
 
     const page = await browser.newPage({ viewport: { width, height } });
     try {
-      await loadImage(page, getDataUrl());
+      await loadImage(page, await getDataUrl());
       const screenshot = await page.locator("#img").screenshot();
 
       if (!fs.existsSync(baselinePath)) {
