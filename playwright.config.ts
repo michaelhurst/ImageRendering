@@ -8,8 +8,8 @@ if (!ENVIRONMENT || !["inside", "production"].includes(ENVIRONMENT)) {
   throw new Error(
     `ENVIRONMENT must be set to "inside" or "production". Got: "${ENVIRONMENT ?? ""}".\n` +
       "Set it in your .env file or pass it on the command line:\n" +
-      "  ENVIRONMENT=inside npx playwright test\n" +
-      "  ENVIRONMENT=production npx playwright test",
+      "  ENVIRONMENT=inside pnpm exec playwright test\n" +
+      "  ENVIRONMENT=production pnpm exec playwright test",
   );
 }
 

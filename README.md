@@ -11,8 +11,8 @@ Playwright test suite for validating SmugMug image display quality, color accura
 **1. Install dependencies:**
 
 ```bash
-npm install
-npx playwright install
+pnpm install
+pnpm exec playwright install
 ```
 
 **2. Configure environment variables:**
@@ -57,22 +57,22 @@ Every test run targets a specific environment. There is no default — you must 
 
 ```bash
 # Run all tests against inside.smugmug.net
-npm run test:inside
+pnpm run test:inside
 
 # Run all tests against smugmug.com
-npm run test:production
+pnpm run test:production
 ```
 
 ### Run a subset
 
 ```bash
 # Local-only tests (no SmugMug credentials needed)
-npm run test:inside:local
-npm run test:production:local
+pnpm run test:inside:local
+pnpm run test:production:local
 
 # SmugMug API tests only (requires credentials)
-npm run test:inside:smugmug
-npm run test:production:smugmug
+pnpm run test:inside:smugmug
+pnpm run test:production:smugmug
 ```
 
 ### Run a single spec file
@@ -80,18 +80,18 @@ npm run test:production:smugmug
 Append `-- <path>` to any environment command:
 
 ```bash
-npm run test:inside -- tests/image-render.spec.ts
-npm run test:production -- tests/api-image-sizing.spec.ts
+pnpm run test:inside -- tests/image-render.spec.ts
+pnpm run test:production -- tests/api-image-sizing.spec.ts
 ```
 
 ### Other commands
 
 ```bash
 # Update visual snapshots
-npm run test:update
+pnpm run test:update
 
 # View the HTML report from the last run
-npm run test:report
+pnpm run test:report
 ```
 
 ### Setting the environment via `.env`
@@ -103,7 +103,7 @@ Instead of using the `test:inside` / `test:production` scripts, you can set `ENV
 ENVIRONMENT=inside
 
 # Then:
-npx playwright test
+pnpm exec playwright test
 ```
 
 If `ENVIRONMENT` is not set (and you're not using one of the named scripts), Playwright will exit with an error telling you to pick one.
@@ -117,7 +117,7 @@ All tests read images from the `TEST_IMAGES_DIR` environment variable.
 ### Local Tests
 
 Local tests validate test image properties directly from disk — no SmugMug credentials needed.
-Run with `npm run test:inside:local` or `npm run test:production:local`.
+Run with `pnpm run test:inside:local` or `pnpm run test:production:local`.
 
 ---
 
@@ -534,7 +534,7 @@ _Checks that orientation processing doesn't accidentally introduce watermark-lik
 ### SmugMug API Tests
 
 API tests upload images to SmugMug and verify the processing pipeline preserves quality, metadata, orientation, and sizing.
-Run with `npm run test:inside:smugmug` or `npm run test:production:smugmug`. Requires `TEST_IMAGES_DIR` and SmugMug credentials in `.env`. A fresh album is created automatically for each test run.
+Run with `pnpm run test:inside:smugmug` or `pnpm run test:production:smugmug`. Requires `TEST_IMAGES_DIR` and SmugMug credentials in `.env`. A fresh album is created automatically for each test run.
 
 ---
 

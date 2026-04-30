@@ -4,14 +4,14 @@
   "description": "Playwright tests for SmugMug image display quality, color accuracy, sizing, orientation, and metadata",
   "main": "index.js",
   "scripts": {
-    "test:inside": "ENVIRONMENT=inside npx playwright test",
-    "test:production": "ENVIRONMENT=production npx playwright test",
-    "test:inside:local": "ENVIRONMENT=inside npx playwright test --project=api-tests --project=ui-tests",
-    "test:production:local": "ENVIRONMENT=production npx playwright test --project=api-tests --project=ui-tests",
-    "test:inside:smugmug": "ENVIRONMENT=inside npx playwright test --project=smugmug-api-tests --project=smugmug-ui-tests",
-    "test:production:smugmug": "ENVIRONMENT=production npx playwright test --project=smugmug-api-tests --project=smugmug-ui-tests",
-    "test:update": "npx playwright test --update-snapshots",
-    "test:report": "npx playwright show-report"
+    "test:inside": "ENVIRONMENT=inside pnpm exec playwright test",
+    "test:production": "ENVIRONMENT=production pnpm exec playwright test",
+    "test:inside:local": "ENVIRONMENT=inside pnpm exec playwright test --project=api-tests --project=ui-tests",
+    "test:production:local": "ENVIRONMENT=production pnpm exec playwright test --project=api-tests --project=ui-tests",
+    "test:inside:smugmug": "ENVIRONMENT=inside pnpm exec playwright test --project=smugmug-api-tests --project=smugmug-ui-tests",
+    "test:production:smugmug": "ENVIRONMENT=production pnpm exec playwright test --project=smugmug-api-tests --project=smugmug-ui-tests",
+    "test:update": "pnpm exec playwright test --update-snapshots",
+    "test:report": "pnpm exec playwright show-report"
   },
   "keywords": [],
   "author": "",

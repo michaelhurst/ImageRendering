@@ -3,8 +3,8 @@
 ## Phase 1 — Project Setup
 
 - [ ] 1. Initialise the project and install dependencies
-  - Run `npm install` in the `image-display-tests/` directory
-  - Run `npx playwright install chromium`
+  - Run `pnpm install` in the `image-display-tests/` directory
+  - Run `pnpm exec playwright install chromium`
   - Confirm `sharp`, `exifr`, and `dotenv` are available
   - _Requirements: all_
 
@@ -141,7 +141,7 @@
   - _Requirements: 5_
 
 - [ ] 13. Implement Metadata Display tests (`tests/metadata-display.spec.ts`)
-  - Run `npx playwright codegen https://inside.smugmug.net` while logged in and navigate to a gallery image in Lightbox
+  - Run `pnpm exec playwright codegen https://inside.smugmug.net` while logged in and navigate to a gallery image in Lightbox
   - Record the actual selectors for: Lightbox container, info panel trigger, camera text, exposure text, focal length, date, GPS section
   - Update the `SELECTORS` object in the spec file with real selectors
   - MD-01 through MD-09: Remove `test.skip()` calls and implement DOM assertions using discovered selectors
@@ -188,7 +188,7 @@
 ## Phase 4 — Calibration & Validation
 
 - [ ] 18. Run the full suite against the inside environment and capture baseline results
-  - `npm run test:inside 2>&1 | tee baseline-results.txt`
+  - `pnpm run test:inside 2>&1 | tee baseline-results.txt`
   - Identify any tests that fail due to threshold miscalibration (not product bugs)
   - _Requirements: all_
 
@@ -199,14 +199,14 @@
   - _Requirements: 1, 2, 4, 9_
 
 - [ ] 20. Implement Lightbox UI tests (MD-01 to MD-09, OR-11, OR-12, RC-04)
-  - Run `npx playwright codegen https://inside.smugmug.net` with `--load-storage=fixtures/auth-state.json`
+  - Run `pnpm exec playwright codegen https://inside.smugmug.net` with `--load-storage=fixtures/auth-state.json`
   - Navigate to a gallery image and open Lightbox, recording selectors
   - Update `SELECTORS` in `metadata-display.spec.ts` and uncomment test implementations
   - Remove `test.skip()` from OR-11, OR-12, and RC-04 once selectors are confirmed
   - _Requirements: 4, 6, 10_
 
 - [ ] 21. Add to CI pipeline
-  - Confirm tests can be run headlessly: `npx playwright test --reporter=junit`
+  - Confirm tests can be run headlessly: `pnpm exec playwright test --reporter=junit`
   - Store credentials as CI secrets and map to `.env` variables
   - Add a rate-limit guard: monitor `X-RateLimit-Remaining` headers during upload-heavy test runs and add delays if needed
   - _Requirements: all_

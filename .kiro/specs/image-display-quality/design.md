@@ -187,7 +187,7 @@ All environment-specific values are injected via `.env` and never hardcoded in t
 ## Test Execution Strategy
 
 - Tests run serially (`workers: 1`) by default because many share upload state within a test group. Full isolation (one album per test run) is a future improvement.
-- UI tests (metadata-display, OR-11/12, RC-04) are scaffolded but marked `test.skip()` pending Lightbox selector discovery via `npx playwright codegen`.
+- UI tests (metadata-display, OR-11/12, RC-04) are scaffolded but marked `test.skip()` pending Lightbox selector discovery via `pnpm exec playwright codegen`.
 - Watermark and resolution cap tests auto-skip when their album key environment variables are not set.
 - The `test.beforeAll` pattern in `metadata-preservation.spec.ts` uploads the rich-EXIF image once and shares the image key across the 14 preservation tests to minimise upload calls.
 
@@ -201,4 +201,4 @@ Kiro agents working on this spec should:
 2. Use `tasks.md` to track implementation progress — check off tasks as they are completed
 3. When implementing a new test, import from `../helpers/test-fixtures` (not `@playwright/test`) to get pre-wired `api`, `imageCompare`, and `exifUtils` fixtures
 4. When adding a new reference image type, document its properties in this design.md and add corresponding entries to the `reference-images/` table in `README.md`
-5. UI tests in `metadata-display.spec.ts` require running `npx playwright codegen https://inside.smugmug.net` while logged in to discover real Lightbox selectors — update the `SELECTORS` object in that file before removing `test.skip()`
+5. UI tests in `metadata-display.spec.ts` require running `pnpm exec playwright codegen https://inside.smugmug.net` while logged in to discover real Lightbox selectors — update the `SELECTORS` object in that file before removing `test.skip()`
