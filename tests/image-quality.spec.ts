@@ -2,31 +2,22 @@
  * IQ-01 through IQ-10: Image Quality & Compression
  *
  * Verifies quality, sharpness, format integrity, and file size
- * using local test images.
+ * using images from the SmugMug baseline gallery.
  *
  *   BASELINE — quality-reference.png  (high-quality lossless reference)
  *   CANDIDATE — quality-detail.jpg    (JPEG derivative for comparison)
  *   NOISY     — quality-noisy.jpg     (high-ISO noisy image)
  */
 
-import { test, expect } from "@playwright/test";
-import * as fs from "fs";
-import * as path from "path";
+import { test, expect } from "../helpers/test-fixtures";
+import { getGalleryImages } from "../helpers/gallery-images";
 
-const IMAGES_DIR =
-  process.env.TEST_IMAGES_DIR || path.join(__dirname, "../Test Images");
-const BASELINE_PATH = path.join(IMAGES_DIR, "quality-reference.png");
-const CANDIDATE_PATH = path.join(IMAGES_DIR, "quality-detail.jpg");
-const NOISY_PATH = path.join(IMAGES_DIR, "quality-noisy.jpg");
+const gallery = getGalleryImages();
 
 const SSIM_THRESHOLD = 0.92;
 const SHARPNESS_MIN_VARIANCE = 50;
 // Downsample large images before SSIM/sharpness to keep tests fast
 const COMPARE_WIDTH = 1600;
-
-function readBuffer(filePath: string): Buffer {
-  return fs.readFileSync(filePath);
-}
 
 async function computeSSIM(buf1: Buffer, buf2: Buffer): Promise<number> {
   const sharp = require("sharp");
@@ -108,7 +99,8 @@ async function measureSharpness(buf: Buffer): Promise<number> {
 // -----------------------------------------------------------------------
 test("IQ-01: Candidate image is readable and has valid dimensions", async () => {
   const sharp = require("sharp");
-  const { width, height } = await sharp(readBuffer(CANDIDATE_PATH)).metadata();
+  const buf = await gallery.fetchImage("quality-detail.jpg");
+  const { width, height } = await sharp(buf).metadata();
   expect(width).toBeGreaterThan(0);
   expect(height).toBeGreaterThan(0);
   console.log(`Candidate: ${width}x${height}`);
@@ -118,10 +110,11 @@ test("IQ-01: Candidate image is readable and has valid dimensions", async () => 
 // IQ-02: Candidate SSIM vs baseline meets threshold
 // -----------------------------------------------------------------------
 test("IQ-02: Candidate SSIM vs baseline meets quality threshold", async () => {
-  const ssim = await computeSSIM(
-    readBuffer(BASELINE_PATH),
-    readBuffer(CANDIDATE_PATH),
-  );
+  const [baseline, candidate] = await Promise.all([
+    gallery.fetchImage("quality-reference.png"),
+    gallery.fetchImage("quality-detail.jpg"),
+  ]);
+  const ssim = await computeSSIM(baseline, candidate);
   console.log(`SSIM: ${ssim.toFixed(4)}`);
   expect(ssim).toBeGreaterThanOrEqual(SSIM_THRESHOLD);
 });
@@ -130,7 +123,7 @@ test("IQ-02: Candidate SSIM vs baseline meets quality threshold", async () => {
 // IQ-03: Candidate file size is non-trivial
 // -----------------------------------------------------------------------
 test("IQ-03: Candidate file size is non-trivial (not empty or truncated)", async () => {
-  const buffer = readBuffer(CANDIDATE_PATH);
+  const buffer = await gallery.fetchImage("quality-detail.jpg");
   expect(buffer.length).toBeGreaterThan(10_000);
 });
 
@@ -138,7 +131,7 @@ test("IQ-03: Candidate file size is non-trivial (not empty or truncated)", async
 // IQ-04: Baseline file size is non-trivial
 // -----------------------------------------------------------------------
 test("IQ-04: Baseline file size is non-trivial", async () => {
-  const buffer = readBuffer(BASELINE_PATH);
+  const buffer = await gallery.fetchImage("quality-reference.png");
   expect(buffer.length).toBeGreaterThan(10_000);
 });
 
@@ -146,7 +139,7 @@ test("IQ-04: Baseline file size is non-trivial", async () => {
 // IQ-05: Candidate is a valid JPEG (correct magic bytes)
 // -----------------------------------------------------------------------
 test("IQ-05: Candidate is a valid JPEG", async () => {
-  const buffer = readBuffer(CANDIDATE_PATH);
+  const buffer = await gallery.fetchImage("quality-detail.jpg");
   expect(buffer[0]).toBe(0xff);
   expect(buffer[1]).toBe(0xd8);
   expect(buffer[2]).toBe(0xff);
@@ -156,7 +149,7 @@ test("IQ-05: Candidate is a valid JPEG", async () => {
 // IQ-06: Baseline is a valid PNG (correct magic bytes)
 // -----------------------------------------------------------------------
 test("IQ-06: Baseline is a valid PNG", async () => {
-  const buffer = readBuffer(BASELINE_PATH);
+  const buffer = await gallery.fetchImage("quality-reference.png");
   expect(buffer[0]).toBe(0x89);
   expect(buffer[1]).toBe(0x50);
   expect(buffer[2]).toBe(0x4e);
@@ -167,7 +160,8 @@ test("IQ-06: Baseline is a valid PNG", async () => {
 // IQ-07: Candidate sharpness meets minimum variance threshold
 // -----------------------------------------------------------------------
 test("IQ-07: Candidate image sharpness meets minimum threshold", async () => {
-  const variance = await measureSharpness(readBuffer(CANDIDATE_PATH));
+  const buf = await gallery.fetchImage("quality-detail.jpg");
+  const variance = await measureSharpness(buf);
   console.log(`Sharpness (Laplacian variance): ${variance.toFixed(1)}`);
   expect(variance).toBeGreaterThan(SHARPNESS_MIN_VARIANCE);
 });
@@ -176,7 +170,8 @@ test("IQ-07: Candidate image sharpness meets minimum threshold", async () => {
 // IQ-08: Noisy image has measurable sharpness (grain registers as variance)
 // -----------------------------------------------------------------------
 test("IQ-08: quality-noisy.jpg has measurable sharpness variance", async () => {
-  const variance = await measureSharpness(readBuffer(NOISY_PATH));
+  const buf = await gallery.fetchImage("quality-noisy.jpg");
+  const variance = await measureSharpness(buf);
   console.log(`Noisy sharpness (Laplacian variance): ${variance.toFixed(1)}`);
   expect(variance).toBeGreaterThan(SHARPNESS_MIN_VARIANCE);
 });
@@ -186,9 +181,13 @@ test("IQ-08: quality-noisy.jpg has measurable sharpness variance", async () => {
 // -----------------------------------------------------------------------
 test("IQ-09: Candidate and baseline have matching aspect ratio", async () => {
   const sharp = require("sharp");
+  const [baseline, candidate] = await Promise.all([
+    gallery.fetchImage("quality-reference.png"),
+    gallery.fetchImage("quality-detail.jpg"),
+  ]);
   const [bMeta, cMeta] = await Promise.all([
-    sharp(readBuffer(BASELINE_PATH)).metadata(),
-    sharp(readBuffer(CANDIDATE_PATH)).metadata(),
+    sharp(baseline).metadata(),
+    sharp(candidate).metadata(),
   ]);
   const baselineRatio = bMeta.width! / bMeta.height!;
   const candidateRatio = cMeta.width! / cMeta.height!;

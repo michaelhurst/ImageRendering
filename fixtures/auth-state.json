@@ -1,0 +1,163 @@
+{
+  "cookies": [
+    {
+      "name": "sp",
+      "value": "e1136b26-8421-4828-af22-3b61a84d9c7b",
+      "domain": ".smugmug.com",
+      "path": "/",
+      "expires": 1809124305.3835,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "csd",
+      "value": "%7B%22v%22%3A1%2C%22pv%22%3A%22250723%22%2C%22r%22%3A%22RoW%22%2C%22cr%22%3Afalse%2C%22nt%22%3A%22n%22%2C%22i%22%3Afalse%2C%22c%22%3A%7B%22e%22%3Atrue%2C%22a%22%3Atrue%2C%22m%22%3Atrue%7D%7D",
+      "domain": ".smugmug.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_sp_ses.9669",
+      "value": "*",
+      "domain": ".smugmug.com",
+      "path": "/",
+      "expires": 1777590109,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "g_state",
+      "value": "{\"i_l\":0,\"i_ll\":1777588306123,\"i_b\":\"Xm83X7dXgxURRVtPdDP3pgvBp7HXCloE4lMYerKP2y0\",\"i_e\":{\"enable_itp_optimization\":0},\"i_et\":1777588306123}",
+      "domain": "www.smugmug.com",
+      "path": "/",
+      "expires": 1793140306,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "Sreferrer",
+      "value": "https%3A%2F%2Fwww.smugmug.com%2Fauth%2Flogin",
+      "domain": ".smugmug.com",
+      "path": "/",
+      "expires": 1780180306.454613,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "sstrack",
+      "value": "7355ab22-7d75-493a-83e0-384c9a9d36f4",
+      "domain": ".smugmug.com",
+      "path": "/",
+      "expires": 1809124309.886276,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "shy",
+      "value": "%7B%22hli%22%3Atrue%7D",
+      "domain": ".smugmug.com",
+      "path": "/",
+      "expires": 1809124307.950379,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "shm",
+      "value": "%7B%22l%22%3A%227569aa2ad45db964b222d5788462c113%22%2C%22t%22%3A%2258059a7a39331e1264c8a3bcb47ac23e66df3855%22%7D",
+      "domain": ".smugmug.com",
+      "path": "/",
+      "expires": 1780266707.950426,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "SMSESS",
+      "value": "7178595a5845ec1dd29fad2b4d64bbca",
+      "domain": ".smugmug.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "od",
+      "value": "%7B%22string%22%3A%22%7B%5C%22SN%5C%22%3A%5B%5C%22Automated-Render-Testing%5C%22%5D%2C%5C%22V%5C%22%3A1%7D%22%2C%22time%22%3A1777588308%2C%22signature%22%3A%22ZmVjNDQyNWRkNzlhNTgwMDg1YjljM2UzMzBmNDIzNmRiODFiZTBmMg%3D%3D%22%2C%22version%22%3A1%2C%22algorithm%22%3A%22sha1%22%7D",
+      "domain": ".smugmug.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "NID",
+      "value": "531=Avrl7dHGPpTAkkCNGDRpLKasrx4EmxerJ3jL9Lw4xz3zJwEJyd-op60BtrF5K592wmCZyWmlq5EPmHYkKn0EpqnZpVk-AYCj8xLhHZpvap4nfBvdTgjblJkrnEv8ZbmBADi4lltu7zHOmknlN6B2tmA5z8Es8U2wPJekVlMhQN4WrAh6sagwEHJTOWZM_QrCAOi1Okp7KF7dyEUlZXw",
+      "domain": ".google.com",
+      "path": "/",
+      "expires": 1793399509.573722,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_sp_id.9669",
+      "value": "9ee90e60-581c-4e62-8c26-8a2196bb3749.1777588306.1.1777588310..7dc8e3c8-7def-4317-970f-360b2c725687..bfdefbf3-0528-4492-90a5-10dc8c5a6fc1.1777588305968.5",
+      "domain": ".smugmug.com",
+      "path": "/",
+      "expires": 1812148309.749183,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "ABTastySession",
+      "value": "mrasn=&lp=https%253A%252F%252Fwww.smugmug.com%252Fapp%252Fdashboard",
+      "domain": ".smugmug.com",
+      "path": "/",
+      "expires": 1777590109,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "ABTasty",
+      "value": "uid=rbww3bej08z4sa6p&fst=1777588309763&pst=-1&cst=1777588309763&ns=1&pvt=1&pvis=1&th=",
+      "domain": ".smugmug.com",
+      "path": "/",
+      "expires": 1811716309,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "https://www.smugmug.com",
+      "localStorage": [
+        {
+          "name": "ABTastyData",
+          "value": "{\"VisitedPages\":[{\"url\":\"https://www.smugmug.com/app/dashboard\",\"visite\":1,\"time\":1777588309763,\"title\":\"Dashboard - SmugMug\"}]}"
+        },
+        {
+          "name": "snowplowOutQueue_mercury-sp",
+          "value": "[]"
+        },
+        {
+          "name": "_gcl_ls",
+          "value": "{\"schema\":\"gcl\",\"version\":1,\"gtg_load_status\":{\"status\":2,\"expires\":1777674710416}}"
+        }
+      ]
+    }
+  ]
+}

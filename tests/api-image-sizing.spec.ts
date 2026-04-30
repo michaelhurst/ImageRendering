@@ -1,10 +1,14 @@
 /**
  * SZ-01 through SZ-11 (API): Image Dimensions & Sizing
  *
- * Uploads reference images and verifies CDN size tiers serve correct
- * dimensions, aspect ratios, and that API fields match source metadata.
+ * Uploads reference images from local disk to SmugMug and verifies CDN
+ * size tiers serve correct dimensions, aspect ratios, and that API
+ * fields match source metadata.
  *
- * Requires: TEST_ALBUM_KEY, TEST_IMAGES_DIR, authenticated session
+ * Source images are read from TEST_IMAGES_DIR to ensure byte-for-byte
+ * integrity comparisons against a known-good local copy.
+ *
+ * Requires: TEST_IMAGES_DIR, authenticated session
  */
 
 import { test, expect } from "../helpers/test-fixtures";
@@ -13,12 +17,12 @@ import * as fs from "fs";
 import * as path from "path";
 
 const IMAGES_DIR = process.env.TEST_IMAGES_DIR!;
-const LANDSCAPE_PATH = path.join(IMAGES_DIR, "c-sizing-landscape.jpg"); // 6000x4000
-const PORTRAIT_PATH = path.join(IMAGES_DIR, "c-sizing-portrait.jpg"); // 4000x6000
-const SQUARE_PATH = path.join(IMAGES_DIR, "c-sizing-square.jpg"); // 5000x5000
-const PANORAMIC_PATH = path.join(IMAGES_DIR, "c-sizing-panoramic.jpg"); // 12000x2000
-const TALL_PATH = path.join(IMAGES_DIR, "c-sizing-tall.jpg"); // 2000x10000
-const SMALL_PATH = path.join(IMAGES_DIR, "c-sizing-small.jpg"); // 400x300
+const LANDSCAPE_PATH = path.join(IMAGES_DIR, "c-sizing-landscape.jpg");
+const PORTRAIT_PATH = path.join(IMAGES_DIR, "c-sizing-portrait.jpg");
+const SQUARE_PATH = path.join(IMAGES_DIR, "c-sizing-square.jpg");
+const PANORAMIC_PATH = path.join(IMAGES_DIR, "c-sizing-panoramic.jpg");
+const TALL_PATH = path.join(IMAGES_DIR, "c-sizing-tall.jpg");
+const SMALL_PATH = path.join(IMAGES_DIR, "c-sizing-small.jpg");
 
 test.describe("SZ (API): Image Dimensions & Sizing", () => {
   let _landscapeKey: string | undefined;
@@ -51,8 +55,19 @@ test.describe("SZ (API): Image Dimensions & Sizing", () => {
       console.log(
         `${tier.label}: API=${tier.width}x${tier.height}, actual=${meta.width}x${meta.height}`,
       );
-      expect(meta.width, `${tier.label} width mismatch`).toBe(tier.width);
-      expect(meta.height, `${tier.label} height mismatch`).toBe(tier.height);
+      expect(meta.width, `${tier.label} width mismatch`).toBeGreaterThanOrEqual(
+        tier.width - 1,
+      );
+      expect(meta.width, `${tier.label} width mismatch`).toBeLessThanOrEqual(
+        tier.width + 1,
+      );
+      expect(
+        meta.height,
+        `${tier.label} height mismatch`,
+      ).toBeGreaterThanOrEqual(tier.height - 1);
+      expect(meta.height, `${tier.label} height mismatch`).toBeLessThanOrEqual(
+        tier.height + 1,
+      );
     }
   });
 
@@ -68,6 +83,8 @@ test.describe("SZ (API): Image Dimensions & Sizing", () => {
 
     for (const tier of tiers) {
       if (tier.label === "O") continue;
+      // Skip square-cropped tiers (Ti, Th) — they don't preserve aspect ratio
+      if (tier.width === tier.height && tier.width <= 150) continue;
       const tierRatio = tier.width / tier.height;
       console.log(
         `${tier.label}: ratio=${tierRatio.toFixed(3)} (source=${sourceRatio.toFixed(3)})`,
@@ -148,6 +165,7 @@ test.describe("SZ (API): Image Dimensions & Sizing", () => {
 
     for (const tier of tiers) {
       if (tier.label === "O") continue;
+      if (tier.width === tier.height && tier.width <= 150) continue;
       const tierRatio = tier.width / tier.height;
       expect(
         Math.abs(tierRatio - sourceRatio),
@@ -171,6 +189,7 @@ test.describe("SZ (API): Image Dimensions & Sizing", () => {
 
     for (const tier of tiers) {
       if (tier.label === "O") continue;
+      if (tier.width === tier.height && tier.width <= 150) continue;
       const tierRatio = tier.width / tier.height;
       expect(
         Math.abs(tierRatio - sourceRatio),

@@ -1,15 +1,18 @@
 /**
  * MP-01 through MP-14 (API): Metadata Preservation
  *
- * Uploads metadata-rich images and verifies EXIF/IPTC fields are
- * preserved through SmugMug's processing pipeline via the !metadata API.
+ * Uploads metadata-rich images from local disk and verifies EXIF/IPTC
+ * fields are preserved through SmugMug's processing pipeline via the
+ * !metadata API.
  *
- * Requires: TEST_ALBUM_KEY, TEST_IMAGES_DIR, authenticated session
+ * Source images are read from TEST_IMAGES_DIR to ensure byte-for-byte
+ * integrity comparisons against a known-good local copy.
+ *
+ * Requires: TEST_IMAGES_DIR, authenticated session
  */
 
 import { test, expect } from "../helpers/test-fixtures";
 import { SmugMugAPI } from "../helpers/smugmug-api";
-import { readExif } from "../helpers/exif-utils";
 import * as fs from "fs";
 import * as path from "path";
 
