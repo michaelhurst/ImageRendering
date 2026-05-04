@@ -8,6 +8,11 @@
  *   - `testNickname`: The test account nickname (`automated-render-testing`)
  *   - `baselineGalleryUrl`: The SmugMug gallery URL for baseline images (environment-aware)
  *
+ * Architecture:
+ *   - ONE folder is created per test run (shared across all workers/tests)
+ *   - Each test gets its own album (gallery) inside that single folder
+ *   - The folder path is persisted to disk so it survives worker restarts
+ *
  * Usage in test files:
  *   import { test, expect } from '../helpers/test-fixtures';
  *
@@ -35,6 +40,45 @@ const BASELINE_GALLERY_URLS: Record<string, string> = {
 };
 
 // ---------------------------------------------------------------------------
+// Run folder persistence
+// ---------------------------------------------------------------------------
+
+const RUN_FOLDER_STATE_PATH = path.resolve(
+  __dirname,
+  "../test-results/.run-folder.json",
+);
+
+interface RunFolderState {
+  folderPath: string;
+  timestamp: string;
+  environment: string;
+}
+
+function loadRunFolderState(): RunFolderState | null {
+  try {
+    if (fs.existsSync(RUN_FOLDER_STATE_PATH)) {
+      return JSON.parse(fs.readFileSync(RUN_FOLDER_STATE_PATH, "utf8"));
+    }
+  } catch {}
+  return null;
+}
+
+function saveRunFolderState(state: RunFolderState): void {
+  const dir = path.dirname(RUN_FOLDER_STATE_PATH);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(RUN_FOLDER_STATE_PATH, JSON.stringify(state, null, 2));
+}
+
+// ---------------------------------------------------------------------------
+// In-memory caches (shared within a single worker process)
+// ---------------------------------------------------------------------------
+
+let _runFolderPath: string | null = null;
+
+// Per-test album cache — keyed by test title
+const _albumCache: Map<string, { key: string; uri: string }> = new Map();
+
+// ---------------------------------------------------------------------------
 // Custom fixture types
 // ---------------------------------------------------------------------------
 
@@ -48,16 +92,6 @@ type ImageDisplayFixtures = {
   baselineGalleryUrl: string;
   referenceImagesDir: string;
 };
-
-// ---------------------------------------------------------------------------
-// Shared run folder — created once per worker, reused across all test files
-// ---------------------------------------------------------------------------
-
-let _runFolderPath: string | null = null;
-let _runTimestamp: string | null = null;
-
-// Per-spec-file album cache — keyed by test file path
-const _albumCache: Map<string, { key: string; uri: string }> = new Map();
 
 // ---------------------------------------------------------------------------
 // Extended test with fixtures
@@ -92,19 +126,35 @@ export const test = base.extend<ImageDisplayFixtures>({
   },
 
   testAlbumKey: async ({ api, testNickname }, use, testInfo) => {
-    // Create the run folder once per worker
+    // Ensure the single run folder exists
     if (!_runFolderPath) {
-      _runTimestamp = new Date()
-        .toISOString()
-        .replace(/[:.]/g, "-")
-        .slice(0, 19);
-      const folderName = `Test Run ${_runTimestamp}`;
-      const { folderPath } = await api.createFolder(testNickname, folderName);
-      _runFolderPath = folderPath;
-      console.log(`[fixtures] Created run folder: ${folderName}`);
+      // Check if another worker already created it (persisted to disk)
+      const env = process.env.ENVIRONMENT || "inside";
+      const saved = loadRunFolderState();
+      if (saved && saved.environment === env) {
+        _runFolderPath = saved.folderPath;
+        console.log(
+          `[fixtures] Reusing run folder from disk: ${saved.folderPath}`,
+        );
+      } else {
+        // Create the single run folder for this entire test run
+        const timestamp = new Date()
+          .toISOString()
+          .replace(/[:.]/g, "-")
+          .slice(0, 19);
+        const folderName = `Test Run ${timestamp}`;
+        const { folderPath } = await api.createFolder(testNickname, folderName);
+        _runFolderPath = folderPath;
+        saveRunFolderState({
+          folderPath,
+          timestamp,
+          environment: env,
+        });
+        console.log(`[fixtures] Created run folder: ${folderName}`);
+      }
     }
 
-    // Create a per-test album inside the run folder, named after the test
+    // Create a per-test album inside the shared run folder
     const testTitle = testInfo.title;
     const cached = _albumCache.get(testTitle);
     if (cached) {

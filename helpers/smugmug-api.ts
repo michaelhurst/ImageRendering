@@ -96,8 +96,11 @@ export class SmugMugAPI {
   private apiKey: string | null = null;
   private csrfToken: string | null = null;
 
-  /** The API key used for authenticated session requests. */
-  static readonly SESSION_API_KEY = "WTw9GdSST3hHkMJMbZFC686pKjTv4s7T";
+  /** The API key used for authenticated session requests (environment-specific). */
+  static readonly SESSION_API_KEY =
+    process.env.ENVIRONMENT === "inside"
+      ? "4iTbhjgoNNOQ2gavhZkb3bqCbsfPRx5x"
+      : "WTw9GdSST3hHkMJMbZFC686pKjTv4s7T";
 
   constructor(page: Page, baseUrl?: string) {
     this.page = page;
@@ -745,6 +748,7 @@ export class SmugMugAPI {
             password: process.env.INSIDE_AUTH_PASS || "",
           };
         }
+        opts.acceptDownloads = true;
         const dlCtx = await browser.newContext(opts);
         // Restore login cookies for authenticated downloads
         try {
@@ -761,19 +765,67 @@ export class SmugMugAPI {
         } catch {}
         const dlPage = await dlCtx.newPage();
         const filename = new URL(url).pathname.split("/").pop() || "";
-        const [response] = await Promise.all([
-          dlPage.waitForResponse((r) => r.url().includes(filename), {
-            timeout: 60_000,
-          }),
-          dlPage.goto(url, { waitUntil: "commit", timeout: 60_000 }),
-        ]);
-        const body = Buffer.from(await response.body());
-        await dlPage.close();
-        await dlCtx.close();
-        if (!response.ok()) {
-          throw new Error(`Download failed for ${url}: ${response.status()}`);
+
+        // Some URLs (archived originals, GIFs) trigger a download instead of
+        // rendering inline. Handle both cases: normal response or download event.
+        try {
+          const [response] = await Promise.all([
+            dlPage.waitForResponse((r) => r.url().includes(filename), {
+              timeout: 60_000,
+            }),
+            dlPage.goto(url, { waitUntil: "commit", timeout: 60_000 }),
+          ]);
+          const body = Buffer.from(await response.body());
+          await dlPage.close();
+          await dlCtx.close();
+          if (!response.ok()) {
+            throw new Error(`Download failed for ${url}: ${response.status()}`);
+          }
+          return body;
+        } catch (err: any) {
+          if (
+            err.message?.includes("Download is starting") ||
+            err.message?.includes("download")
+          ) {
+            // The URL triggered a file download — use the download event
+            await dlPage.close();
+            await dlCtx.close();
+
+            // Re-create context and use download handling
+            const dlCtx2 = await browser.newContext({
+              ...opts,
+              acceptDownloads: true,
+            });
+            try {
+              const authPath = require("path").resolve(
+                __dirname,
+                "../fixtures/auth-state.json",
+              );
+              const state = JSON.parse(
+                require("fs").readFileSync(authPath, "utf8"),
+              );
+              if (state.cookies?.length) {
+                await dlCtx2.addCookies(state.cookies);
+              }
+            } catch {}
+            const dlPage2 = await dlCtx2.newPage();
+            const [download] = await Promise.all([
+              dlPage2.waitForEvent("download", { timeout: 60_000 }),
+              dlPage2.goto(url, { timeout: 60_000 }).catch(() => {}),
+            ]);
+            const filePath = await download.path();
+            if (!filePath) {
+              await dlPage2.close();
+              await dlCtx2.close();
+              throw new Error(`Download failed for ${url}: no file path`);
+            }
+            const body = require("fs").readFileSync(filePath);
+            await dlPage2.close();
+            await dlCtx2.close();
+            return Buffer.from(body);
+          }
+          throw err;
         }
-        return body;
       }
     }
 

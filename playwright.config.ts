@@ -20,6 +20,7 @@ const BASE_URL =
 
 export default defineConfig({
   testDir: "./tests",
+  globalSetup: "./helpers/global-setup.ts",
   fullyParallel: false, // Many tests share upload state; run serially by default
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,

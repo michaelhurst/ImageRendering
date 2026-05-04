@@ -23,22 +23,23 @@ cp .env.example .env
 
 Fill in your `.env` file:
 
-| Variable                     | Required  | Description                                                    |
-| ---------------------------- | --------- | -------------------------------------------------------------- |
-| `ENVIRONMENT`                | **Yes**   | `inside` or `production` — see [Running Tests](#running-tests) |
-| `INSIDE_AUTH_USER`           | inside    | HTTP Basic Auth username for inside.smugmug.net                |
-| `INSIDE_AUTH_PASS`           | inside    | HTTP Basic Auth password                                       |
-| `SMUGMUG_QA_PASSWORD`        | API tests | SmugMug login password                                         |
-| `SMUGMUG_API_KEY`            | API tests | SmugMug API key (OAuth 1.0a)                                   |
-| `SMUGMUG_API_SECRET`         | API tests | SmugMug API secret                                             |
-| `SMUGMUG_OAUTH_TOKEN`        | API tests | OAuth token                                                    |
-| `SMUGMUG_OAUTH_TOKEN_SECRET` | API tests | OAuth token secret                                             |
-| `TEST_IMAGES_DIR`            | Yes       | Absolute path to local test images folder                      |
-| `TEST_RESOLUTION_CAP_MAX`    | No        | Optional max longest edge for resolution cap tests             |
+| Variable                  | Required  | Description                                                    |
+| ------------------------- | --------- | -------------------------------------------------------------- |
+| `ENVIRONMENT`             | **Yes**   | `inside` or `production` — see [Running Tests](#running-tests) |
+| `INSIDE_AUTH_USER`        | inside    | HTTP Basic Auth username for inside.smugmug.net                |
+| `INSIDE_AUTH_PASS`        | inside    | HTTP Basic Auth password                                       |
+| `SMUGMUG_QA_PASSWORD`     | API tests | SmugMug login password                                         |
+| `TEST_IMAGES_DIR`         | Yes       | Absolute path to local test images folder                      |
+| `TEST_RESOLUTION_CAP_MAX` | No        | Optional max longest edge for resolution cap tests             |
 
 > **Note:** `ENVIRONMENT` has no default. Tests will refuse to start until you set it to either `inside` or `production`.
 
 > **Test account:** All tests use the shared account `automated+render-testing@smugmug.com` (nickname: `automated-render-testing`). The username and nickname are hardcoded — only the password needs to be configured.
+
+> **API Keys (session-based):** Each environment uses a different API key for authenticated session requests. These are hardcoded in `helpers/smugmug-api.ts`:
+>
+> - **Production:** `WTw9GdSST3hHkMJMbZFC686pKjTv4s7T`
+> - **Inside:** `4iTbhjgoNNOQ2gavhZkb3bqCbsfPRx5x`
 
 > **Baseline images gallery:** The reference images that define how images should be displayed are hosted on SmugMug:
 >
