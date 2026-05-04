@@ -29,6 +29,7 @@ Fill in your `.env` file:
 | `INSIDE_AUTH_USER`        | inside    | HTTP Basic Auth username for inside.smugmug.net                |
 | `INSIDE_AUTH_PASS`        | inside    | HTTP Basic Auth password                                       |
 | `SMUGMUG_QA_PASSWORD`     | API tests | SmugMug login password                                         |
+| `SMUGMUG_API_KEY`         | API tests | Session API key (see below)                                    |
 | `TEST_IMAGES_DIR`         | Yes       | Absolute path to local test images folder                      |
 | `TEST_RESOLUTION_CAP_MAX` | No        | Optional max longest edge for resolution cap tests             |
 
@@ -36,7 +37,7 @@ Fill in your `.env` file:
 
 > **Test account:** All tests use the shared account `automated+render-testing@smugmug.com` (nickname: `automated-render-testing`). The username and nickname are hardcoded — only the password needs to be configured.
 
-> **API Keys (session-based):** Each environment uses a different API key for authenticated session requests. These are hardcoded in `helpers/smugmug-api.ts`:
+> **API Keys (session-based):** Each environment uses a different API key for authenticated session requests. Set `SMUGMUG_API_KEY` in your `.env` to match the target environment:
 >
 > - **Production:** `WTw9GdSST3hHkMJMbZFC686pKjTv4s7T`
 > - **Inside:** `4iTbhjgoNNOQ2gavhZkb3bqCbsfPRx5x`
