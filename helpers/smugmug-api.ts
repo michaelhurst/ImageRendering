@@ -96,12 +96,16 @@ export class SmugMugAPI {
   private apiKey: string | null = null;
   private csrfToken: string | null = null;
 
-  /** The API key used for authenticated session requests (loaded from SMUGMUG_API_KEY env var). */
+  /** The API key used for authenticated session requests (loaded from env vars). */
   static get SESSION_API_KEY(): string {
-    const key = process.env.SMUGMUG_API_KEY;
+    const env = process.env.ENVIRONMENT || "inside";
+    const key =
+      env === "production"
+        ? process.env.SMUGMUG_API_KEY_PRODUCTION
+        : process.env.SMUGMUG_API_KEY_INSIDE;
     if (!key) {
       throw new Error(
-        "SMUGMUG_API_KEY must be set in .env. Use the inside or production API key.",
+        `SMUGMUG_API_KEY_${env.toUpperCase()} must be set in .env.`,
       );
     }
     return key;
