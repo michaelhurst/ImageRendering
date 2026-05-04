@@ -41,6 +41,8 @@ test.describe("RC (API): Display Resolution Cap", () => {
   }
 
   // RC-01: Capped resolution limits max served size
+  // SKIPPED: Requires TEST_RESOLUTION_CAP_MAX env var (e.g., 5120 for 5K cap).
+  // The cap varies by account plan. Set it to the expected max longest edge.
   test("RC-01: No tier exceeds resolution cap", async ({
     api,
     testAlbumUri,
@@ -100,6 +102,8 @@ test.describe("RC (API): Display Resolution Cap", () => {
   });
 
   // RC-04: Lightbox respects resolution cap for visitors
+  // SKIPPED: Same as RC-01 — needs TEST_RESOLUTION_CAP_MAX to validate the cap
+  // is enforced in the browser Lightbox view (visitor perspective).
   test("RC-04: Lightbox image respects resolution cap", async ({
     api,
     page,

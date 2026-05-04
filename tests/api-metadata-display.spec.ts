@@ -149,6 +149,9 @@ test.describe("MD (API): Metadata Display in Lightbox", () => {
   });
 
   // MD-06: Lightbox hides GPS when Geography disabled
+  // SKIPPED: Requires PATCH to album settings to toggle Geography display off,
+  // then verify GPS is hidden in Lightbox. Need to identify the API field name
+  // for the Geography toggle (likely on the album or folder object).
   test("MD-06: Lightbox hides GPS when Geography disabled", async ({
     page,
   }) => {
@@ -160,6 +163,9 @@ test.describe("MD (API): Metadata Display in Lightbox", () => {
   });
 
   // MD-07: Lightbox hides GPS when site-level GPS off
+  // SKIPPED: Requires PATCH to user/account settings to disable GPS globally.
+  // Risk: account-level change could affect other tests running concurrently.
+  // Consider running this in isolation or with a dedicated test account.
   test("MD-07: Lightbox hides GPS when site-level GPS off", async ({
     page,
   }) => {
@@ -170,6 +176,9 @@ test.describe("MD (API): Metadata Display in Lightbox", () => {
   });
 
   // MD-08: EXIF hidden when gallery EXIF setting is off
+  // SKIPPED: Requires PATCH to album settings to disable EXIF display,
+  // then verify camera metadata is not rendered in Lightbox info panel.
+  // Need to identify the correct API field for the EXIF display toggle.
   test("MD-08: EXIF hidden when gallery EXIF setting is off", async ({
     page,
   }) => {
