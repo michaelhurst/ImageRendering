@@ -109,12 +109,32 @@ test.describe("IQ (API): Image Quality & Compression", () => {
   }
 
   // IQ-01: JPEG quality preserved at each CDN size tier
-  // IQ-01: JPEG quality preserved at each CDN size tier
-  test("IQ-01: JPEG quality preserved at each CDN size tier", async () => {
-    test.skip(
-      true,
-      "CDN tier downloads require auth not available in test context on inside",
-    );
+  test("IQ-01: JPEG quality preserved at each CDN size tier", async ({
+    api,
+    testAlbumUri,
+  }) => {
+    const jpegKey = await ensureJpegUploaded(api, testAlbumUri);
+    const tiers = await api.waitForSizeTiers(jpegKey);
+    const sharp = require("sharp");
+    const sourceBuffer = fs.readFileSync(DETAIL_PATH);
+
+    for (const tier of tiers) {
+      if (tier.label === "O" || tier.label === "Ti" || tier.label === "Th")
+        continue;
+
+      const resizedSource = await sharp(sourceBuffer)
+        .resize(tier.width, tier.height, { fit: "inside" })
+        .jpeg({ quality: 95 })
+        .toBuffer();
+
+      const tierBuffer = await api.downloadBuffer(tier.url);
+      const ssim = await computeSSIM(resizedSource, tierBuffer);
+      console.log(`IQ-01 ${tier.label}: SSIM=${ssim.toFixed(4)}`);
+      expect(
+        ssim,
+        `${tier.label} tier SSIM below threshold`,
+      ).toBeGreaterThanOrEqual(SSIM_THRESHOLD);
+    }
   });
 
   // IQ-02: Original upload is preserved (size and URI)
@@ -194,11 +214,43 @@ test.describe("IQ (API): Image Quality & Compression", () => {
   });
 
   // IQ-06: PNG resized tiers convert to JPEG acceptably
-  test("IQ-06: PNG resized tiers convert to JPEG acceptably", async () => {
-    test.skip(
-      true,
-      "CDN tier downloads require auth not available in test context on inside",
-    );
+  test("IQ-06: PNG resized tiers convert to JPEG acceptably", async ({
+    api,
+    testAlbumUri,
+  }) => {
+    const pngKey = await ensurePngUploaded(api, testAlbumUri);
+    // Wait for tiers to be generated (large PNG needs processing time)
+    const tiers = await api.waitForSizeTiers(pngKey, 5, 120_000);
+    const sharp = require("sharp");
+    const sourceBuffer = fs.readFileSync(PNG_PATH);
+
+    const checkTiers = tiers.filter((t) => t.label === "M" || t.label === "L");
+    if (checkTiers.length === 0) {
+      console.log("IQ-06: No M or L tiers available, skipping");
+      return;
+    }
+
+    for (const tier of checkTiers) {
+      const tierBuffer = await api.downloadBuffer(tier.url);
+      const tierMeta = await sharp(tierBuffer).metadata();
+      console.log(
+        `IQ-06 ${tier.label}: downloaded ${tierBuffer.length} bytes, ` +
+          `${tierMeta.width}x${tierMeta.height} ${tierMeta.format}`,
+      );
+
+      // Resize source to match the actual downloaded tier dimensions
+      const resizedSource = await sharp(sourceBuffer)
+        .resize(tierMeta.width, tierMeta.height, { fit: "fill" })
+        .jpeg({ quality: 95 })
+        .toBuffer();
+
+      const ssim = await computeSSIM(resizedSource, tierBuffer);
+      console.log(`IQ-06 ${tier.label}: SSIM=${ssim.toFixed(4)}`);
+      expect(
+        ssim,
+        `PNG→JPEG ${tier.label} tier SSIM below threshold`,
+      ).toBeGreaterThanOrEqual(SSIM_THRESHOLD);
+    }
   });
 
   // IQ-07: GIF upload preserves original

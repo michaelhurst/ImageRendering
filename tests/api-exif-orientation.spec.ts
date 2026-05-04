@@ -173,11 +173,78 @@ test.describe("OR (API): EXIF Orientation", () => {
     }
   });
 
-  // OR-12: Orientation corrected in Organize thumbnails
-  test("OR-12: Orientation 6 thumbnail is portrait in gallery", async () => {
-    test.skip(
-      true,
-      "Organize view thumbnail selectors vary across environments",
-    );
+  // OR-12: Orientation corrected in gallery thumbnails
+  test("OR-12: Orientation 6 thumbnail is portrait in gallery", async ({
+    api,
+    page,
+    testAlbumKey,
+    testAlbumUri,
+  }) => {
+    // Upload orientation-6 image into this test's album
+    const result = await api.uploadImage(ORIENT6_HIRES_PATH, testAlbumUri, {
+      title: "or-6-gallery-thumb",
+    });
+    const key = SmugMugAPI.extractImageKey(result.ImageUri);
+
+    // Wait for size tiers to generate (needed for thumbnails)
+    await api.waitForSizeTiers(key);
+
+    // Get the album's web URL from the API
+    const albumData = await api.get(`/api/v2/album/${testAlbumKey}`);
+    const albumWebUri = albumData.Response.Album.WebUri;
+    const albumUrl = albumWebUri.startsWith("http")
+      ? albumWebUri
+      : `${process.env.ENVIRONMENT === "production" ? "https://www.smugmug.com" : "https://inside.smugmug.net"}${albumWebUri}`;
+
+    console.log(`OR-12: Navigating to album: ${albumUrl}`);
+    await page.goto(albumUrl, { waitUntil: "networkidle", timeout: 30_000 });
+
+    // Wait for thumbnail images to load
+    await page.waitForTimeout(3000);
+
+    // Find thumbnail images that reference the photos CDN
+    const thumbDims = await page.evaluate(() => {
+      const imgs = document.querySelectorAll("img");
+      for (const img of imgs) {
+        if (
+          img.src.includes("photos") &&
+          img.naturalWidth > 0 &&
+          img.naturalHeight > 0
+        ) {
+          return { width: img.naturalWidth, height: img.naturalHeight };
+        }
+      }
+      return null;
+    });
+
+    if (!thumbDims) {
+      // Retry after more time for lazy-loaded thumbnails
+      await page.waitForTimeout(5000);
+      const retry = await page.evaluate(() => {
+        const imgs = document.querySelectorAll("img");
+        for (const img of imgs) {
+          if (
+            img.src.includes("photos") &&
+            img.naturalWidth > 0 &&
+            img.naturalHeight > 0
+          ) {
+            return { width: img.naturalWidth, height: img.naturalHeight };
+          }
+        }
+        return null;
+      });
+      expect(retry, "No thumbnail image found in gallery").toBeTruthy();
+      console.log(`OR-12: Thumbnail ${retry!.width}x${retry!.height}`);
+      expect(
+        retry!.height,
+        "Thumbnail should be portrait (height > width)",
+      ).toBeGreaterThan(retry!.width);
+    } else {
+      console.log(`OR-12: Thumbnail ${thumbDims.width}x${thumbDims.height}`);
+      expect(
+        thumbDims.height,
+        "Thumbnail should be portrait (height > width)",
+      ).toBeGreaterThan(thumbDims.width);
+    }
   });
 });
