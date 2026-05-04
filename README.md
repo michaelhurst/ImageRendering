@@ -40,8 +40,8 @@ Fill in your `.env` file:
 
 > **API Keys (session-based):** Each environment uses a different API key for authenticated session requests. Both are set in `.env` and the correct one is selected automatically based on `ENVIRONMENT`:
 >
-> - **Production** (`SMUGMUG_API_KEY_PRODUCTION`): `WTw9GdSST3hHkMJMbZFC686pKjTv4s7T`
-> - **Inside** (`SMUGMUG_API_KEY_INSIDE`): `4iTbhjgoNNOQ2gavhZkb3bqCbsfPRx5x`
+> - `SMUGMUG_API_KEY_PRODUCTION` — found in the production site's frontend (DevTools → Network → look for `?APIKey=` on API calls)
+> - `SMUGMUG_API_KEY_INSIDE` — found in the inside site's frontend (same method)
 
 > **Baseline images gallery:** The reference images that define how images should be displayed are hosted on SmugMug:
 >
