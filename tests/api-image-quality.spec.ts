@@ -38,19 +38,48 @@ function md5Hex(buf: Buffer): string {
 
 async function computeSSIM(buf1: Buffer, buf2: Buffer): Promise<number> {
   const sharp = require("sharp");
+
+  // Get dimensions of both images to ensure we compare at identical sizes
+  const [meta1, meta2] = await Promise.all([
+    sharp(buf1).metadata(),
+    sharp(buf2).metadata(),
+  ]);
+
+  // Resize both to the same fixed dimensions for a fair comparison.
+  // Use the smaller of the two widths (capped at COMPARE_WIDTH) and compute
+  // height from the first image's aspect ratio.
+  const targetWidth = Math.min(
+    COMPARE_WIDTH,
+    meta1.width || COMPARE_WIDTH,
+    meta2.width || COMPARE_WIDTH,
+  );
+  const targetHeight = Math.round(
+    targetWidth * ((meta1.height || 1) / (meta1.width || 1)),
+  );
+
   const [d1, d2] = await Promise.all([
     sharp(buf1)
-      .resize(COMPARE_WIDTH, null, { fit: "inside" })
+      .resize(targetWidth, targetHeight, { fit: "fill" })
       .greyscale()
       .raw()
       .toBuffer(),
     sharp(buf2)
-      .resize(COMPARE_WIDTH, null, { fit: "inside" })
+      .resize(targetWidth, targetHeight, { fit: "fill" })
       .greyscale()
       .raw()
       .toBuffer(),
   ]);
-  const n = Math.min(d1.length, d2.length);
+
+  // Both buffers must be the same length for a valid comparison
+  if (d1.length !== d2.length) {
+    console.warn(
+      `SSIM warning: buffer length mismatch (${d1.length} vs ${d2.length}). ` +
+        `Source: ${meta1.width}x${meta1.height}, Target: ${meta2.width}x${meta2.height}`,
+    );
+    return 0;
+  }
+
+  const n = d1.length;
   let s1 = 0,
     s2 = 0;
   for (let i = 0; i < n; i++) {
@@ -190,9 +219,9 @@ test.describe("IQ (API): Image Quality & Compression", () => {
         `actual: ${tierMeta.width}x${tierMeta.height} ${tierMeta.format}, ${tierBuffer.length} bytes`,
     );
 
-    // Resize source to match the actual downloaded dimensions
+    // Resize source to the tier's actual dimensions for comparison
     const resizedSource = await sharp(sourceBuffer)
-      .resize(tierMeta.width!, tierMeta.height!, { fit: "fill" })
+      .resize(tierMeta.width!, tierMeta.height!, { fit: "inside" })
       .jpeg({ quality: 95 })
       .toBuffer();
 
@@ -250,9 +279,9 @@ test.describe("IQ (API): Image Quality & Compression", () => {
           `${tierMeta.width}x${tierMeta.height} ${tierMeta.format}`,
       );
 
-      // Resize source to match the actual downloaded tier dimensions
+      // Resize source to the tier's actual dimensions for comparison
       const resizedSource = await sharp(sourceBuffer)
-        .resize(tierMeta.width, tierMeta.height, { fit: "fill" })
+        .resize(tierMeta.width, tierMeta.height, { fit: "inside" })
         .jpeg({ quality: 95 })
         .toBuffer();
 
