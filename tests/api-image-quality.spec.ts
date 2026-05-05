@@ -174,18 +174,28 @@ test.describe("IQ (API): Image Quality & Compression", () => {
     testAlbumUri,
   }) => {
     const jpegKey = await ensureJpegUploaded(api, testAlbumUri);
-    const tiers = await api.getSizeDetails(jpegKey);
+    // Ensure tiers are fully generated before comparing
+    const tiers = await api.waitForSizeTiers(jpegKey, 5);
     const largeTier = tiers.find((t) => t.label === "L" || t.label === "XL");
     if (!largeTier) return;
 
     const sharp = require("sharp");
     const sourceBuffer = fs.readFileSync(DETAIL_PATH);
+
+    // Download the tier and check its actual dimensions
+    const tierBuffer = await api.downloadBuffer(largeTier.url);
+    const tierMeta = await sharp(tierBuffer).metadata();
+    console.log(
+      `IQ-04: Tier ${largeTier.label} — API: ${largeTier.width}x${largeTier.height}, ` +
+        `actual: ${tierMeta.width}x${tierMeta.height} ${tierMeta.format}, ${tierBuffer.length} bytes`,
+    );
+
+    // Resize source to match the actual downloaded dimensions
     const resizedSource = await sharp(sourceBuffer)
-      .resize(largeTier.width, largeTier.height, { fit: "inside" })
+      .resize(tierMeta.width!, tierMeta.height!, { fit: "fill" })
       .jpeg({ quality: 95 })
       .toBuffer();
 
-    const tierBuffer = await api.downloadBuffer(largeTier.url);
     const ssim = await computeSSIM(resizedSource, tierBuffer);
     console.log(
       `Double-compression check (${largeTier.label}): SSIM=${ssim.toFixed(4)}`,
