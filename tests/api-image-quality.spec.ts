@@ -228,9 +228,11 @@ test.describe("IQ (API): Image Quality & Compression", () => {
     api,
     testAlbumUri,
   }) => {
+    // 132MB PNG needs extra time for upload + tier generation
+    test.setTimeout(300_000);
     const pngKey = await ensurePngUploaded(api, testAlbumUri);
     // Wait for tiers to be generated (large PNG needs processing time)
-    const tiers = await api.waitForSizeTiers(pngKey, 5, 120_000);
+    const tiers = await api.waitForSizeTiers(pngKey, 5, 180_000);
     const sharp = require("sharp");
     const sourceBuffer = fs.readFileSync(PNG_PATH);
 
