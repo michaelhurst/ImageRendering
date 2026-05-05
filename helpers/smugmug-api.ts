@@ -422,10 +422,20 @@ export class SmugMugAPI {
     x: number,
     y: number,
   ): Promise<void> {
-    await this.patch(`/api/v2/image/${imageKey}-0`, {
-      PointOfInterestX: x,
-      PointOfInterestY: y,
-    });
+    // Try the !pointofinterest endpoint first (PUT with X/Y)
+    try {
+      await this.put(`/api/v2/image/${imageKey}-0!pointofinterest`, {
+        X: x,
+        Y: y,
+      });
+      return;
+    } catch {
+      // Fallback: PATCH the image object directly
+      await this.patch(`/api/v2/image/${imageKey}-0`, {
+        PointOfInterestX: x,
+        PointOfInterestY: y,
+      });
+    }
   }
 
   /** Fetch face/object regions */

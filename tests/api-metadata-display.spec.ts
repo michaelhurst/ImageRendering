@@ -193,9 +193,6 @@ test.describe("MD (API): Metadata Display in Lightbox", () => {
     await visitorPage.close();
     await visitorCtx.close();
 
-    // Re-enable Geography (cleanup)
-    await api.patch(`/api/v2/album/${testAlbumKey}`, { Geography: true });
-
     expect(
       hasGPS,
       "GPS should be hidden for visitors when Geography is disabled",
@@ -251,7 +248,7 @@ test.describe("MD (API): Metadata Display in Lightbox", () => {
     await visitorPage.close();
     await visitorCtx.close();
 
-    // Restore (cleanup)
+    // Restore user-level setting (this is account-wide, not per-album)
     await api.patch(`/api/v2/user/${testNickname}`, { Geography: true });
 
     expect(
@@ -276,6 +273,12 @@ test.describe("MD (API): Metadata Display in Lightbox", () => {
     await api.patch(`/api/v2/album/${testAlbumKey}`, { EXIF: false });
     console.log("MD-08: EXIF disabled on album");
 
+    // Verify the setting was applied
+    const albumData = await api.get(`/api/v2/album/${testAlbumKey}`);
+    console.log(
+      `MD-08: Album EXIF setting after PATCH: ${albumData.Response.Album.EXIF}`,
+    );
+
     // Open the image in a fresh logged-out browser context (visitor perspective)
     const browser = page.context().browser()!;
     const visitorOpts: any = {};
@@ -294,10 +297,12 @@ test.describe("MD (API): Metadata Display in Lightbox", () => {
     await visitorPage.waitForTimeout(1000);
 
     const body = await visitorPage.textContent("body");
+    // Check for actual EXIF display text (not JS/JSON internals)
+    // ISO must be followed by a space and digits (e.g., "ISO 800") not "ISO8601"
     const hasEXIF =
       body?.match(/f\/\d/) ||
-      body?.match(/ISO\s*\d/) ||
-      body?.match(/\d+\s*mm/i) ||
+      body?.match(/ISO\s+\d{2,}/) ||
+      body?.match(/\d+\s*mm\b/i) ||
       body?.includes("Canon") ||
       body?.includes("Nikon");
     console.log(`MD-08: EXIF visible to visitor: ${!!hasEXIF}`);
@@ -305,20 +310,10 @@ test.describe("MD (API): Metadata Display in Lightbox", () => {
     await visitorPage.close();
     await visitorCtx.close();
 
-    // Re-enable EXIF (cleanup)
-    await api.patch(`/api/v2/album/${testAlbumKey}`, { EXIF: true });
-
-    // KNOWN ISSUE: The EXIF album setting does not hide EXIF from visitors
-    // in the Lightbox on inside. This may be a platform bug or the setting
-    // may control a different display context. Marking as fixme.
-    test.fixme(
-      !!hasEXIF,
-      "EXIF album setting does not hide EXIF from visitors in Lightbox — possible platform bug",
-    );
-    if (!hasEXIF) {
-      // If it does work (e.g., on production), assert it properly
-      expect(hasEXIF).toBeFalsy();
-    }
+    expect(
+      hasEXIF,
+      "EXIF should be hidden for visitors when album EXIF setting is off",
+    ).toBeFalsy();
   });
 
   // MD-09: Image without EXIF renders info panel gracefully
