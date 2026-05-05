@@ -186,7 +186,26 @@ test.describe("MA (API): Metadata API Accuracy", () => {
       );
     }
 
+    // If !regions returns nothing, try checking the raw API response
     if (regions.length === 0) {
+      try {
+        const rawData = await api.get(`/api/v2/image/${key}-0!regions`);
+        console.log(
+          `MA-07: Raw !regions response: ${JSON.stringify(rawData.Response).slice(0, 500)}`,
+        );
+      } catch (err: any) {
+        console.log(`MA-07: !regions error: ${err.message}`);
+      }
+
+      // Also check if regions are in the image metadata
+      const meta = await api.getMetadata(key);
+      const regionKeys = Object.keys(meta).filter((k) =>
+        /region|face|area/i.test(k),
+      );
+      console.log(
+        `MA-07: Metadata region keys: ${regionKeys.join(", ") || "none"}`,
+      );
+
       test.skip(true, "XMP region parsing not available in this environment");
       return;
     }

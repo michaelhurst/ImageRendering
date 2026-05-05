@@ -441,7 +441,7 @@ export class SmugMugAPI {
   /** Fetch face/object regions */
   async getRegions(imageKey: string): Promise<any[]> {
     const data = await this.get(`/api/v2/image/${imageKey}-0!regions`);
-    return data.Response.ImageRegion || [];
+    return data.Response.Region || data.Response.ImageRegion || [];
   }
 
   // -------------------------------------------------------------------------
