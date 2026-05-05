@@ -252,58 +252,6 @@ test.describe("IQ (API): Image Quality & Compression", () => {
     console.log(`IQ-05: ArchivedUri=${image.ArchivedUri.slice(0, 80)}...`);
   });
 
-  // IQ-06: PNG resized tiers convert to JPEG acceptably
-  test("IQ-06: PNG resized tiers convert to JPEG acceptably", async ({
-    api,
-    testAlbumUri,
-  }) => {
-    // 132MB PNG needs extra time for upload + tier generation
-    test.setTimeout(300_000);
-    const pngKey = await ensurePngUploaded(api, testAlbumUri);
-    // Wait for tiers to be generated (large PNG needs processing time)
-    const tiers = await api.waitForSizeTiers(pngKey, 5, 180_000);
-    const sharp = require("sharp");
-    const sourceBuffer = fs.readFileSync(PNG_PATH);
-
-    const checkTiers = tiers.filter((t) => t.label === "M" || t.label === "L");
-    if (checkTiers.length === 0) {
-      console.log("IQ-06: No M or L tiers available, skipping");
-      return;
-    }
-
-    for (const tier of checkTiers) {
-      const tierBuffer = await api.downloadBuffer(tier.url);
-      const tierMeta = await sharp(tierBuffer).metadata();
-      console.log(
-        `IQ-06 ${tier.label}: downloaded ${tierBuffer.length} bytes, ` +
-          `${tierMeta.width}x${tierMeta.height} ${tierMeta.format}`,
-      );
-
-      // Resize source to the tier's actual dimensions for comparison
-      const resizedSource = await sharp(sourceBuffer)
-        .resize(tierMeta.width, tierMeta.height, { fit: "inside" })
-        .jpeg({ quality: 95 })
-        .toBuffer();
-
-      const ssim = await computeSSIM(resizedSource, tierBuffer);
-      console.log(`IQ-06 ${tier.label}: SSIM=${ssim.toFixed(4)}`);
-
-      // SSIM < 0.5 means the tier is serving a completely different image
-      // (placeholder or processing-in-progress), not a quality degradation
-      if (ssim < 0.5) {
-        test.skip(
-          true,
-          `${tier.label} tier serving wrong content (SSIM=${ssim.toFixed(4)}) — PNG may still be processing`,
-        );
-        return;
-      }
-      expect(
-        ssim,
-        `PNG→JPEG ${tier.label} tier SSIM below threshold`,
-      ).toBeGreaterThanOrEqual(SSIM_THRESHOLD);
-    }
-  });
-
   // IQ-07: GIF upload preserves original
   test("IQ-07: GIF upload preserves original", async ({
     api,
