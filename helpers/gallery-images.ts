@@ -17,6 +17,8 @@
  */
 
 import { request, type APIRequestContext } from "@playwright/test";
+import * as fs from "fs";
+import * as path from "path";
 
 // ---------------------------------------------------------------------------
 // Gallery URLs and API base per environment
@@ -76,6 +78,11 @@ export class GalleryImages {
       this.env === "production"
         ? process.env.SMUGMUG_API_KEY_PRODUCTION || ""
         : process.env.SMUGMUG_API_KEY_INSIDE || "";
+    if (!this.apiKey) {
+      throw new Error(
+        `SMUGMUG_API_KEY_${this.env.toUpperCase()} must be set in .env`,
+      );
+    }
   }
 
   /** Get the gallery URL for the current environment. */
@@ -104,6 +111,20 @@ export class GalleryImages {
         username: process.env.INSIDE_AUTH_USER || "",
         password: process.env.INSIDE_AUTH_PASS || "",
       };
+    }
+
+    // Load saved session cookies for authenticated API access
+    const authStatePath = path.resolve(
+      __dirname,
+      "../fixtures/auth-state.json",
+    );
+    if (fs.existsSync(authStatePath)) {
+      try {
+        const state = JSON.parse(fs.readFileSync(authStatePath, "utf8"));
+        if (state.cookies?.length) {
+          options.storageState = authStatePath;
+        }
+      } catch {}
     }
 
     this.ctx = await request.newContext(options);
