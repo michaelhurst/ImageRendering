@@ -46,23 +46,29 @@ export default defineConfig({
   projects: [
     {
       name: "api-tests",
-      testMatch: [
-        "image-render.spec.ts",
-        "image-quality.spec.ts",
-        "color-accuracy.spec.ts",
-        "image-sizing.spec.ts",
-        "exif-orientation.spec.ts",
-        "metadata-preservation.spec.ts",
-        "metadata-api.spec.ts",
-        "point-of-interest.spec.ts",
-        "watermark.spec.ts",
-        "resolution-cap.spec.ts",
-      ],
+      // Only non-redundant local tests are enabled here.
+      // The following were disabled because they duplicate what the
+      // smugmug-api-tests project already covers against the live pipeline:
+      //   image-quality.spec.ts    → covered by IQ-01 through IQ-10
+      //   image-sizing.spec.ts     → covered by SZ-01 through SZ-11
+      //   exif-orientation.spec.ts → covered by OR-01 through OR-12
+      //   metadata-preservation.spec.ts → covered by MP-01 through MP-14
+      //   metadata-api.spec.ts     → covered by MA-01 through MA-07
+      //   point-of-interest.spec.ts → covered by POI-01 through POI-05
+      //   watermark.spec.ts        → covered by WM-01 through WM-05
+      //   resolution-cap.spec.ts   → covered by RC-01 through RC-04
+      // These local tests validated source files or a pre-uploaded baseline
+      // gallery, which is less thorough than the API tests that upload fresh
+      // each run. Re-enable if local-only validation is needed without
+      // SmugMug credentials.
+      testMatch: ["image-render.spec.ts", "color-accuracy.spec.ts"],
       use: { ...devices["Desktop Chrome"] },
     },
     {
       name: "ui-tests",
-      testMatch: ["metadata-display.spec.ts"],
+      // Disabled: covered by smugmug-ui-tests (api-metadata-display.spec.ts)
+      // which tests the same Lightbox behavior with fresh uploads.
+      testMatch: [],
       use: { ...devices["Desktop Chrome"] },
     },
     {

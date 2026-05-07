@@ -64,17 +64,30 @@ export class GalleryImages {
   private ctx: APIRequestContext | null = null;
   private imageIndex: Map<string, GalleryImageInfo> | null = null;
   private downloadCache: Map<string, Buffer> = new Map();
+  private apiKey: string;
 
   constructor(env?: string) {
     this.env = env || process.env.ENVIRONMENT || "inside";
     if (!GALLERY_CONFIG[this.env]) {
       throw new Error(`No gallery config for ENVIRONMENT="${this.env}"`);
     }
+    // Use the environment-specific API key
+    this.apiKey =
+      this.env === "production"
+        ? process.env.SMUGMUG_API_KEY_PRODUCTION || ""
+        : process.env.SMUGMUG_API_KEY_INSIDE || "";
   }
 
   /** Get the gallery URL for the current environment. */
   get galleryUrl(): string {
     return GALLERY_CONFIG[this.env].galleryUrl;
+  }
+
+  /** Append the API key to a URL (if available). */
+  private appendApiKey(url: string): string {
+    if (!this.apiKey) return url;
+    const sep = url.includes("?") ? "&" : "?";
+    return `${url}${sep}APIKey=${this.apiKey}`;
   }
 
   /** Create (or reuse) an API request context with appropriate auth. */
@@ -107,41 +120,40 @@ export class GalleryImages {
     const ctx = await this.getContext();
     const config = GALLERY_CONFIG[this.env];
 
-    // Step 1: Resolve the gallery URL to get the album key.
-    // The gallery page URL follows the pattern /{nickname}/{album-url-path}.
-    // We can use the API to look up the album by its URL path.
-    const galleryPath = new URL(this.galleryUrl).pathname; // e.g. /Baseline-Images
-
-    // Use the user/urlpathlookup endpoint to resolve the path to an album URI
-    const lookupUrl = `${config.apiBase}/api/v2/user/automated-render-testing!urlpathlookup?urlpath=${encodeURIComponent(galleryPath)}`;
-    const lookupRes = await ctx.get(lookupUrl, {
+    // Look up the Baseline-Images album under the user's root
+    const albumsUrl = this.appendApiKey(
+      `${config.apiBase}/api/v2/folder/user/automated-render-testing!albums`,
+    );
+    const albumsRes = await ctx.get(albumsUrl, {
       headers: { Accept: "application/json" },
     });
 
-    if (!lookupRes.ok()) {
+    if (!albumsRes.ok()) {
       throw new Error(
-        `Failed to resolve gallery URL "${this.galleryUrl}": ${lookupRes.status()} ${await lookupRes.text()}`,
+        `Failed to list albums: ${albumsRes.status()} ${await albumsRes.text()}`,
       );
     }
 
-    const lookupData = await lookupRes.json();
-    const albumUri =
-      lookupData?.Response?.Album?.Uri ||
-      lookupData?.Response?.Folder?.Album?.Uri;
+    const albumsData = await albumsRes.json();
+    const albums = albumsData?.Response?.Album || [];
+    const baselineAlbum = albums.find(
+      (a: any) =>
+        a.Name === "Baseline Images" ||
+        a.UrlName === "Baseline-Images" ||
+        a.Name === "Baseline-Images",
+    );
 
-    if (!albumUri) {
-      // Fallback: try to find the album URI from the Uris map
-      const uris =
-        lookupData?.Response?.Album?.Uris || lookupData?.Response?.Uris;
-      const albumImagesUri = uris?.AlbumImages?.Uri;
-      if (!albumImagesUri) {
-        throw new Error(
-          `Could not find album URI from gallery URL "${this.galleryUrl}". Response: ${JSON.stringify(lookupData?.Response).slice(0, 500)}`,
-        );
-      }
-      return this.fetchAlbumImages(albumImagesUri);
+    if (!baselineAlbum) {
+      const available = albums.map((a: any) => a.Name).join(", ");
+      throw new Error(
+        `Baseline-Images album not found. Available albums: ${available}`,
+      );
     }
 
+    const albumUri = baselineAlbum.Uri;
+    console.log(
+      `Gallery: Found "${baselineAlbum.Name}" (key: ${baselineAlbum.AlbumKey || baselineAlbum.Key})`,
+    );
     return this.fetchAlbumImages(`${albumUri}!images`);
   }
 
@@ -158,7 +170,9 @@ export class GalleryImages {
     let total = Infinity;
 
     while (start <= total) {
-      const url = `${config.apiBase}${albumImagesUri}?start=${start}&count=${count}`;
+      const url = this.appendApiKey(
+        `${config.apiBase}${albumImagesUri}?start=${start}&count=${count}`,
+      );
       const res = await ctx.get(url, {
         headers: { Accept: "application/json" },
       });
