@@ -2,7 +2,7 @@
 
 Playwright test suite for validating SmugMug image display quality, color accuracy, sizing, EXIF orientation, watermarking, and metadata handling.
 
-136 local tests across 11 spec files, plus 82 SmugMug API tests across 9 spec files (218 total).
+136 local tests across 11 spec files, plus 67 SmugMug API tests across 9 spec files (203 total).
 
 ---
 
@@ -18,7 +18,7 @@ pnpm exec playwright install
 **2. Configure environment variables:**
 
 ```bash
-cp .env.example .env
+# Copy the .env template and fill in your values
 ```
 
 Fill in your `.env` file:
@@ -32,7 +32,6 @@ Fill in your `.env` file:
 | `SMUGMUG_API_KEY_PRODUCTION` | production | Session API key for smugmug.com                                |
 | `SMUGMUG_API_KEY_INSIDE`     | inside     | Session API key for inside.smugmug.net                         |
 | `TEST_IMAGES_DIR`            | Yes        | Absolute path to local test images folder                      |
-| `TEST_RESOLUTION_CAP_MAX`    | No         | Optional max longest edge for resolution cap tests             |
 
 > **Note:** `ENVIRONMENT` has no default. Tests will refuse to start until you set it to either `inside` or `production`.
 
