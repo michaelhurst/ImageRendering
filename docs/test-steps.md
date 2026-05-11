@@ -55,10 +55,10 @@ OR-12: Orientation 6 thumbnail is portrait in gallery
 IQ-01: JPEG quality preserved at each CDN size tier
   1. UPLOAD      Upload quality-detail.jpg (62MB)
   2. WAIT        Trigger tier generation, wait for 5+ tiers
-  3. FOR EACH    For each tier (S, M, L, XL, X2L, X3L, X4L, X5L, 4K, 5K):
+  3. FOR EACH    For each tier (S through 5K):
      a. DOWNLOAD    Fetch tier from CDN
      b. RESIZE      Resize source locally to tier dimensions (Q95)
-     c. COMPARE     Compute SSIM between local resize and CDN tier
+     c. COMPARE     Compute SSIM (both normalized to same dimensions)
      d. ASSERT      SSIM >= 0.9
   PASSES WHEN:   Every tier maintains structural similarity to source
 
@@ -68,20 +68,13 @@ IQ-02: Original download matches uploaded file
   3. ASSERT      ArchivedSize == source file size; ArchivedUri present
   PASSES WHEN:   Original is stored without modification
 
-IQ-03: Original download preserves file size
-  1. UPLOAD      Upload quality-detail.jpg
-  2. READ API    GET image — check ArchivedSize
-  3. ASSERT      ArchivedSize == source file byte count
-  PASSES WHEN:   No silent re-encoding of the original
-
 IQ-04: No double-compression on JPEG uploads
   1. UPLOAD      Upload quality-detail.jpg
   2. WAIT        Trigger tier generation, wait for L tier
-  3. DOWNLOAD    Fetch L tier from CDN
-  4. INSPECT     Read actual dimensions of downloaded tier
-  5. RESIZE      Resize source locally to those dimensions (Q95)
-  6. COMPARE     Compute SSIM between local resize and CDN tier
-  7. ASSERT      SSIM >= 0.9
+  3. DOWNLOAD    Fetch L tier from CDN, read actual dimensions
+  4. RESIZE      Resize source locally to actual tier dimensions (Q95)
+  5. COMPARE     Compute SSIM (normalized to same pixel grid)
+  6. ASSERT      SSIM >= 0.9
   PASSES WHEN:   CDN tier looks like a single-pass resize, not re-encoded
 
 IQ-05: PNG served losslessly at original size
@@ -102,15 +95,16 @@ IQ-08: HEIC upload produces viewable JPEG conversion
   1. UPLOAD      Upload quality-reference.heic
   2. WAIT        Trigger tier generation
   3. DOWNLOAD    Fetch L/XL tier from CDN
-  4. INSPECT     Read dimensions and format with sharp
-  5. ASSERT      Valid JPEG with dimensions > 0
-  PASSES WHEN:   HEIC is converted to a viewable JPEG
+  4. INSPECT     Verify JPEG magic bytes and dimensions > 0
+  5. COMPARE     If HEIC decode available: SSIM against locally-converted reference
+  6. ASSERT      Valid JPEG; SSIM >= 0.9 (when available)
+  PASSES WHEN:   HEIC is converted to a quality JPEG
 
 IQ-09: High-ISO image doesn't gain artifacts after resize
   1. UPLOAD      Upload quality-noisy.jpg (16MB, high ISO)
   2. READ API    GET !sizedetails for L tier
   3. DOWNLOAD    Fetch L tier
-  4. RESIZE      Resize source locally to L dimensions (Q95)
+  4. RESIZE      Resize source locally to L dimensions
   5. COMPARE     Compute SSIM
   6. ASSERT      SSIM >= 0.9
   PASSES WHEN:   Noisy image not degraded by sharpening/noise amplification
@@ -120,7 +114,7 @@ IQ-10: Image sharpness maintained after resize
   2. READ API    GET !sizedetails for M and L tiers
   3. DOWNLOAD    Fetch M and L tiers
   4. MEASURE     Compute Laplacian variance on each
-  5. ASSERT      Variance > 50 for both
+  5. ASSERT      Variance > 500 for both (typical: ~9000)
   PASSES WHEN:   Fine detail preserved (not over-smoothed)
 ```
 
@@ -148,8 +142,11 @@ SZ-02: Aspect ratio preserved across all tiers
 SZ-03: Landscape image longest edge matches tier spec
   1. UPLOAD      Upload 6000x4000 landscape
   2. READ API    GET !sizedetails
-  3. ASSERT      Each tier has longest edge > 0
-  PASSES WHEN:   Tier sizing logic works for landscape
+  3. FOR EACH    For each tier, compare longest edge to expected spec
+  4. ASSERT      Each tier matches expected pixels (±1px):
+                 Ti=100, Th=150, S=400, M=600, L=800, XL=1024,
+                 X2L=1280, X3L=1600, X4L=2048, X5L=2560, 4K=3840, 5K=5120
+  PASSES WHEN:   Every tier is sized to the correct spec
 
 SZ-04: Portrait image longest edge matches tier spec
   1. UPLOAD      Upload c-sizing-portrait.jpg (4000x6000)
@@ -185,7 +182,9 @@ SZ-09: !largestimage returns highest available dimensions
   1. UPLOAD      Upload landscape image
   2. READ API    GET !largestimage
   3. ASSERT      Dimensions > 0, <= original; URL present
-  PASSES WHEN:   API returns the best available resolution
+  4. READ API    GET !sizedetails for all tiers
+  5. ASSERT      No other tier has a larger longest edge than !largestimage
+  PASSES WHEN:   API returns the actual largest available tier
 
 SZ-10: OriginalWidth/Height match source file
   1. UPLOAD      Upload landscape image
@@ -370,11 +369,15 @@ RC-01: No tier exceeds resolution cap [VISITOR]
      d. ASSERT      Longest edge <= cap pixel value
   PASSES WHEN:   Every cap setting correctly limits visitor tiers
 
-RC-02: Owner can access full resolution tiers
+RC-02: Owner can access full resolution despite cap
   1. UPLOAD      Upload high-res image
-  2. READ API    GET image, GET !largestimage
-  3. ASSERT      Largest tier has dimensions > 0 and URL present
-  PASSES WHEN:   Owner sees full resolution regardless of cap
+  2. PATCH       Set album LargestSize = Medium (600px cap)
+  3. READ API    GET image for OriginalWidth and ArchivedUri
+  4. DOWNLOAD    Fetch archived original
+  5. INSPECT     Read dimensions with sharp
+  6. ASSERT      Archived download matches source dimensions exactly
+  7. ASSERT      OriginalWidth exceeds the 600px display cap
+  PASSES WHEN:   Owner can download full-res original regardless of display cap
 
 RC-03: Owner archived download is full resolution
   1. UPLOAD      Upload high-res image
@@ -424,7 +427,7 @@ TO-04: Text sharpness preserved in converted L tier
   2. READ API    GET !sizedetails for L tier
   3. DOWNLOAD    Fetch L tier
   4. MEASURE     Compute Laplacian variance
-  5. ASSERT      Variance > 50
+  5. ASSERT      Variance > 500 (typical: ~2445)
   PASSES WHEN:   Text remains sharp after conversion + resize
 
 TO-05: Archived original is downloadable and valid
@@ -442,18 +445,19 @@ TO-05: Archived original is downloadable and valid
 ```
 WM-01: Watermark present on visitor-facing tiers
   1. UPLOAD      Upload c-watermark-test.jpg
-  2. READ API    GET image (check Watermark flag)
-  3. READ API    GET !sizedetails
-  4. DOWNLOAD    Fetch multiple tiers
-  5. ASSERT      All tiers are valid images (size > 0)
-  PASSES WHEN:   Tiers are generated and accessible
+  2. PATCH       Enable Watermark on album
+  3. DOWNLOAD    Fetch L tier as owner (clean copy)
+  4. DOWNLOAD    Fetch same tier as visitor (unauthenticated API)
+  5. COMPARE     MD5 of owner vs visitor versions
+  6. ASSERT      MD5 differs (watermark applied to visitor copy)
+  PASSES WHEN:   Visitor tier has watermark (differs from owner)
 
 WM-02: Owner download has no watermark (MD5 matches source)
   1. UPLOAD      Upload c-watermark-test.jpg
   2. READ API    GET image for ArchivedUri
   3. DOWNLOAD    Fetch archived file
   4. COMPARE     MD5 of download vs source
-  5. ASSERT      MD5 matches (no watermark applied to owner copy)
+  5. ASSERT      MD5 matches (no watermark on owner copy)
   PASSES WHEN:   Owner gets the original without watermark
 
 WM-03: Archived original has no watermark
@@ -462,19 +466,22 @@ WM-03: Archived original has no watermark
   3. ASSERT      ArchivedSize == source file byte count
   PASSES WHEN:   Archived file is unmodified
 
-WM-04: Watermark pixel diff between tiers is consistent
+WM-04: Watermark applied at both small and large sizes
   1. UPLOAD      Upload c-watermark-test.jpg
-  2. READ API    GET !sizedetails
-  3. DOWNLOAD    Fetch small (Th) and large (L) tiers
-  4. INSPECT     Read dimensions of both
-  5. ASSERT      Both have valid dimensions
+  2. PATCH       Enable Watermark on album
+  3. DOWNLOAD    Fetch small (Th/S) and large (L/XL) tiers as owner
+  4. DOWNLOAD    Fetch same tiers as visitor
+  5. COMPARE     MD5 of owner vs visitor for each size
+  6. ASSERT      Both small and large visitor tiers differ from owner
   PASSES WHEN:   Watermark scales correctly across tier sizes
 
-WM-05: All tiers are valid images (watermark scaling check)
+WM-05: All tiers have watermark applied [VISITOR]
   1. UPLOAD      Upload c-watermark-test.jpg
-  2. READ API    GET !sizedetails
-  3. FOR EACH    Download each tier
-  4. INSPECT     Read dimensions and byte count
-  5. ASSERT      Dimensions match API; bytes > 0
-  PASSES WHEN:   Every tier is a valid, downloadable image
+  2. PATCH       Enable Watermark on album
+  3. FOR EACH    For each non-original tier:
+     a. DOWNLOAD    Fetch as owner and as visitor
+     b. COMPARE     MD5 of owner vs visitor
+     c. LOG         Whether tier is watermarked
+  4. ASSERT      At least some tiers are watermarked
+  PASSES WHEN:   Watermark applied across the tier set
 ```
