@@ -59,40 +59,77 @@ test.describe("MP (API): Metadata Preservation", () => {
     api,
     testAlbumUri,
   }) => {
-    const { key: richKey } = await ensureRichUploaded(api, testAlbumUri);
-    const meta = await api.getMetadata(richKey);
-    expect(meta.Make || meta.CameraMake).toBeTruthy();
-    expect(meta.Model || meta.CameraModel).toBeTruthy();
-    console.log(
-      `Make: ${meta.Make || meta.CameraMake}, Model: ${meta.Model || meta.CameraModel}`,
+    const { key: richKey, sourceExif } = await ensureRichUploaded(
+      api,
+      testAlbumUri,
     );
+    const meta = await api.getMetadata(richKey);
+    const apiMake = (meta.Make || meta.CameraMake || "").trim();
+    const apiModel = (meta.Model || meta.CameraModel || "").trim();
+    const sourceMake = (sourceExif.Make || "").trim();
+    const sourceModel = (sourceExif.Model || "").trim();
+    console.log(`Make: "${apiMake}" (source: "${sourceMake}")`);
+    console.log(`Model: "${apiModel}" (source: "${sourceModel}")`);
+    expect(apiMake.toLowerCase()).toContain(sourceMake.toLowerCase());
+    // API may strip brand from model (e.g., "EOS 6D" instead of "Canon EOS 6D")
+    expect(
+      sourceModel.toLowerCase().includes(apiModel.toLowerCase()) ||
+        apiModel.toLowerCase().includes(sourceModel.toLowerCase()),
+      `Model mismatch: API="${apiModel}", source="${sourceModel}"`,
+    ).toBe(true);
   });
 
   // MP-02: Exposure settings preserved
   test("MP-02: Exposure settings preserved", async ({ api, testAlbumUri }) => {
-    const { key: richKey } = await ensureRichUploaded(api, testAlbumUri);
+    const { key: richKey, sourceExif } = await ensureRichUploaded(
+      api,
+      testAlbumUri,
+    );
     const meta = await api.getMetadata(richKey);
-    expect(meta.ExposureTime || meta.Exposure).toBeDefined();
-    expect(meta.FNumber || meta.Aperture).toBeDefined();
-    expect(meta.ISO || meta.ISOSpeedRatings).toBeDefined();
+    const apiExposure = meta.ExposureTime || meta.Exposure;
+    const apiISO = meta.ISO || meta.ISOSpeedRatings;
+    console.log(
+      `ExposureTime: ${apiExposure} (source: ${sourceExif.ExposureTime})`,
+    );
+    console.log(`ISO: ${apiISO} (source: ${sourceExif.ISO})`);
+    expect(Number(apiExposure)).toBeCloseTo(sourceExif.ExposureTime, 3);
+    expect(Number(apiISO)).toBe(sourceExif.ISO);
   });
 
   // MP-03: Focal length preserved
   test("MP-03: Focal length preserved", async ({ api, testAlbumUri }) => {
-    const { key: richKey } = await ensureRichUploaded(api, testAlbumUri);
+    const { key: richKey, sourceExif } = await ensureRichUploaded(
+      api,
+      testAlbumUri,
+    );
     const meta = await api.getMetadata(richKey);
-    expect(meta.FocalLength).toBeDefined();
-    console.log(`FocalLength: ${meta.FocalLength}`);
+    const apiFocal = parseFloat(meta.FocalLength);
+    console.log(
+      `FocalLength: ${meta.FocalLength} (source: ${sourceExif.FocalLength})`,
+    );
+    expect(apiFocal).toBeCloseTo(sourceExif.FocalLength, 0);
   });
 
   // MP-04: Date/time original preserved
   test("MP-04: DateTimeOriginal preserved", async ({ api, testAlbumUri }) => {
-    const { key: richKey } = await ensureRichUploaded(api, testAlbumUri);
-    const meta = await api.getMetadata(richKey);
-    expect(meta.DateTimeOriginal || meta.DateCreated).toBeTruthy();
-    console.log(
-      `DateTimeOriginal: ${meta.DateTimeOriginal || meta.DateCreated}`,
+    const { key: richKey, sourceExif } = await ensureRichUploaded(
+      api,
+      testAlbumUri,
     );
+    const meta = await api.getMetadata(richKey);
+    const apiDate = meta.DateTimeOriginal || meta.DateCreated;
+    console.log(
+      `DateTimeOriginal: ${apiDate} (source: ${sourceExif.DateTimeOriginal})`,
+    );
+    expect(apiDate).toBeTruthy();
+    // Verify year/month/day match (API may return date-only or full datetime)
+    const sourceDate = new Date(sourceExif.DateTimeOriginal);
+    const apiDateStr = String(apiDate);
+    expect(apiDateStr).toContain(String(sourceDate.getFullYear()));
+    const sourceMonth = String(sourceDate.getMonth() + 1).padStart(2, "0");
+    const sourceDay = String(sourceDate.getDate()).padStart(2, "0");
+    expect(apiDateStr).toContain(sourceMonth);
+    expect(apiDateStr).toContain(sourceDay);
   });
 
   // MP-05: GPS coordinates preserved
@@ -102,15 +139,17 @@ test.describe("MP (API): Metadata Preservation", () => {
       testAlbumUri,
     );
     const image = await api.getImage(richKey);
-    const meta = await api.getMetadata(richKey);
-    // GPS may be on the image object or in metadata
-    const hasGPS =
-      (image.Latitude !== 0 && image.Longitude !== 0) ||
-      meta.GPSLatitude !== undefined ||
-      meta.Latitude !== undefined;
-    console.log(`GPS: lat=${image.Latitude}, lon=${image.Longitude}`);
     if (sourceExif.latitude) {
-      expect(hasGPS, "GPS coordinates missing").toBe(true);
+      console.log(
+        `GPS: API lat=${image.Latitude}, source lat=${sourceExif.latitude}`,
+      );
+      console.log(
+        `GPS: API lon=${image.Longitude}, source lon=${sourceExif.longitude}`,
+      );
+      expect(Number(image.Latitude)).toBeCloseTo(sourceExif.latitude, 4);
+      expect(Number(image.Longitude)).toBeCloseTo(sourceExif.longitude, 4);
+    } else {
+      console.log("MP-05: Source image has no GPS data — skipping");
     }
   });
 
@@ -125,6 +164,7 @@ test.describe("MP (API): Metadata Preservation", () => {
     if (image.Latitude !== 0) {
       const metaLat = meta.GPSLatitude || meta.Latitude || 0;
       if (metaLat !== 0) {
+        console.log(`Image lat=${image.Latitude}, Metadata lat=${metaLat}`);
         expect(Math.abs(image.Latitude - metaLat)).toBeLessThan(0.01);
       }
     }
@@ -137,10 +177,18 @@ test.describe("MP (API): Metadata Preservation", () => {
       testAlbumUri,
     );
     const meta = await api.getMetadata(richKey);
-    const hasLens = meta.LensModel || meta.LensInfo || meta.Lens;
-    if (sourceExif.LensModel) {
-      expect(hasLens, "Lens info missing").toBeTruthy();
-      console.log(`Lens: ${hasLens}`);
+    const apiLens = meta.LensModel || meta.LensInfo || meta.Lens;
+    const sourceLens = sourceExif.LensModel || sourceExif.LensInfo;
+    if (sourceLens) {
+      console.log(`Lens: ${apiLens} (source: ${sourceLens})`);
+      // API may reformat lens name (add brand, spaces). Check key numbers match.
+      const sourceNumbers = sourceLens.match(/\d+/g) || [];
+      const apiNumbers = (apiLens || "").match(/\d+/g) || [];
+      // At least the focal length numbers should be present
+      expect(
+        sourceNumbers.some((n: string) => apiNumbers.includes(n)),
+        `Lens focal length not found. API: "${apiLens}", Source: "${sourceLens}"`,
+      ).toBe(true);
     }
   });
 
@@ -152,8 +200,10 @@ test.describe("MP (API): Metadata Preservation", () => {
     );
     const meta = await api.getMetadata(richKey);
     if (sourceExif.WhiteBalance !== undefined) {
+      console.log(
+        `WhiteBalance: ${meta.WhiteBalance} (source: ${sourceExif.WhiteBalance})`,
+      );
       expect(meta.WhiteBalance).toBeDefined();
-      console.log(`WhiteBalance: ${meta.WhiteBalance}`);
     }
   });
 
@@ -165,8 +215,8 @@ test.describe("MP (API): Metadata Preservation", () => {
     );
     const meta = await api.getMetadata(richKey);
     if (sourceExif.Flash !== undefined) {
+      console.log(`Flash: ${meta.Flash} (source: ${sourceExif.Flash})`);
       expect(meta.Flash).toBeDefined();
-      console.log(`Flash: ${meta.Flash}`);
     }
   });
 
@@ -178,8 +228,10 @@ test.describe("MP (API): Metadata Preservation", () => {
     );
     const meta = await api.getMetadata(richKey);
     if (sourceExif.Copyright) {
-      expect(meta.Copyright).toBeTruthy();
-      console.log(`Copyright: ${meta.Copyright}`);
+      console.log(
+        `Copyright: ${meta.Copyright} (source: ${sourceExif.Copyright})`,
+      );
+      expect(meta.Copyright).toBe(sourceExif.Copyright);
     }
   });
 
@@ -194,8 +246,9 @@ test.describe("MP (API): Metadata Preservation", () => {
     );
     const meta = await api.getMetadata(richKey);
     if (sourceExif.Artist) {
-      expect(meta.Artist || meta.Author).toBeTruthy();
-      console.log(`Artist: ${meta.Artist || meta.Author}`);
+      const apiArtist = meta.Artist || meta.Author;
+      console.log(`Artist: ${apiArtist} (source: ${sourceExif.Artist})`);
+      expect(apiArtist).toBe(sourceExif.Artist);
     }
   });
 
@@ -206,13 +259,23 @@ test.describe("MP (API): Metadata Preservation", () => {
   }) => {
     const iptcKey = await ensureIptcUploaded(api, testAlbumUri);
     const image = await api.getImage(iptcKey);
-    const meta = await api.getMetadata(iptcKey);
-    const caption = image.Caption || meta.Caption || meta["Caption-Abstract"];
-    console.log(`Caption: ${caption}`);
-    // Just verify it's present — exact value depends on the IPTC fixture
-    expect(caption !== undefined && caption !== null && caption !== "").toBe(
-      true,
-    );
+
+    // Read source IPTC caption
+    const exifr = require("exifr");
+    const sourceData = await exifr.parse(fs.readFileSync(IPTC_PATH), {
+      iptc: true,
+    });
+    const sourceCaption =
+      sourceData?.["Caption-Abstract"] ||
+      sourceData?.Caption ||
+      sourceData?.Description;
+
+    const apiCaption = image.Caption;
+    console.log(`Caption: "${apiCaption}" (source: "${sourceCaption}")`);
+    expect(apiCaption).toBeTruthy();
+    if (sourceCaption) {
+      expect(apiCaption).toContain(sourceCaption);
+    }
   });
 
   // MP-13: IPTC keywords preserved as Keywords
@@ -222,9 +285,25 @@ test.describe("MP (API): Metadata Preservation", () => {
   }) => {
     const iptcKey = await ensureIptcUploaded(api, testAlbumUri);
     const image = await api.getImage(iptcKey);
-    console.log(`Keywords: ${JSON.stringify(image.KeywordArray)}`);
+
+    // Read source IPTC keywords
+    const exifr = require("exifr");
+    const sourceData = await exifr.parse(fs.readFileSync(IPTC_PATH), {
+      iptc: true,
+    });
+    const sourceKeywords = sourceData?.Keywords || [];
+
+    console.log(
+      `Keywords: ${JSON.stringify(image.KeywordArray)} (source: ${JSON.stringify(sourceKeywords)})`,
+    );
     expect(image.KeywordArray).toBeDefined();
     expect(image.KeywordArray.length).toBeGreaterThan(0);
+    // Verify source keywords are all present
+    if (Array.isArray(sourceKeywords)) {
+      for (const kw of sourceKeywords) {
+        expect(image.KeywordArray, `Missing keyword: ${kw}`).toContain(kw);
+      }
+    }
   });
 
   // MP-14: UserComment EXIF field preserved
@@ -238,8 +317,16 @@ test.describe("MP (API): Metadata Preservation", () => {
     );
     const meta = await api.getMetadata(richKey);
     if (sourceExif.UserComment) {
+      console.log(
+        `UserComment: ${meta.UserComment} (source: ${sourceExif.UserComment})`,
+      );
       expect(meta.UserComment).toBeTruthy();
-      console.log(`UserComment: ${meta.UserComment}`);
+      // Verify content matches (UserComment may have encoding prefix stripped)
+      expect(meta.UserComment).toContain(
+        sourceExif.UserComment.replace(/^(ASCII|UNICODE)\0+/, "").trim(),
+      );
+    } else {
+      console.log("MP-14: Source has no UserComment — skipping value check");
     }
   });
 });

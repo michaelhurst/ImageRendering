@@ -96,18 +96,48 @@ test.describe("SZ (API): Image Dimensions & Sizing", () => {
     }
   });
 
-  // SZ-03: Landscape image longest edge matches tier spec
+  // SZ-03: Landscape image longest edge matches expected tier sizes
   test("SZ-03: Landscape image longest edge matches tier spec", async ({
     api,
     testAlbumUri,
   }) => {
     const landscapeKey = await ensureLandscapeUploaded(api, testAlbumUri);
     const tiers = await api.getSizeDetails(landscapeKey);
+
+    // Expected longest edge for each tier (for a 6000x4000 source)
+    const expectedMaxEdge: Record<string, number> = {
+      Ti: 100,
+      Th: 150,
+      S: 400,
+      M: 600,
+      L: 800,
+      XL: 1024,
+      X2L: 1280,
+      X3L: 1600,
+      X4L: 2048,
+      X5L: 2560,
+      "4K": 3840,
+      "5K": 5120,
+    };
+
     for (const tier of tiers) {
       if (tier.label === "O") continue;
       const longestEdge = Math.max(tier.width, tier.height);
-      console.log(`${tier.label}: longest edge=${longestEdge}`);
-      expect(longestEdge).toBeGreaterThan(0);
+      const expected = expectedMaxEdge[tier.label];
+      console.log(
+        `${tier.label}: longest edge=${longestEdge}${expected ? ` (expected=${expected})` : ""}`,
+      );
+      if (expected) {
+        // Allow ±1px for rounding
+        expect(
+          longestEdge,
+          `${tier.label} longest edge should be ~${expected}px`,
+        ).toBeGreaterThanOrEqual(expected - 1);
+        expect(
+          longestEdge,
+          `${tier.label} longest edge should be ~${expected}px`,
+        ).toBeLessThanOrEqual(expected + 1);
+      }
     }
   });
 
@@ -220,7 +250,7 @@ test.describe("SZ (API): Image Dimensions & Sizing", () => {
     }
   });
 
-  // SZ-09: !largestimage returns highest available dimensions
+  // SZ-09: !largestimage returns the actual largest available tier
   test("SZ-09: !largestimage returns highest available dimensions", async ({
     api,
     testAlbumUri,
@@ -234,6 +264,18 @@ test.describe("SZ (API): Image Dimensions & Sizing", () => {
     expect(largest.width).toBeLessThanOrEqual(image.OriginalWidth);
     expect(largest.height).toBeLessThanOrEqual(image.OriginalHeight);
     expect(largest.url).toBeTruthy();
+
+    // Verify it's actually the largest — no other tier should be bigger
+    const tiers = await api.getSizeDetails(landscapeKey);
+    const nonOriginalTiers = tiers.filter((t) => t.label !== "O");
+    for (const tier of nonOriginalTiers) {
+      const tierLongest = Math.max(tier.width, tier.height);
+      const largestLongest = Math.max(largest.width, largest.height);
+      expect(
+        tierLongest,
+        `Tier ${tier.label} (${tierLongest}px) is larger than !largestimage (${largestLongest}px)`,
+      ).toBeLessThanOrEqual(largestLongest);
+    }
   });
 
   // SZ-10: OriginalWidth/Height match source file

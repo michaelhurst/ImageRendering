@@ -114,21 +114,39 @@ test.describe("RC (API): Display Resolution Cap", () => {
     }
   });
 
-  // RC-02: Owner can still access full resolution
+  // RC-02: Owner can access full resolution original despite display cap
   test("RC-02: Owner can access full resolution tiers", async ({
     api,
+    testAlbumKey,
     testAlbumUri,
   }) => {
     const hiresKey = await ensureUploaded(api, testAlbumUri);
+    const sharp = require("sharp");
+    const sourceMeta = await sharp(fs.readFileSync(HIRES_PATH)).metadata();
+
+    // Set a restrictive display cap
+    await api.patch(`/api/v2/album/${testAlbumKey}`, { LargestSize: "Medium" });
+
+    // Owner can still download the full-resolution original via ArchivedUri
     const image = await api.getImage(hiresKey);
-    const largest = await api.getLargestImage(hiresKey);
+    console.log(
+      `RC-02: Cap=Medium (600px), Original: ${image.OriginalWidth}x${image.OriginalHeight}`,
+    );
 
-    console.log(`Original: ${image.OriginalWidth}x${image.OriginalHeight}`);
-    console.log(`Largest available: ${largest.width}x${largest.height}`);
+    expect(image.ArchivedUri, "ArchivedUri should be present").toBeTruthy();
+    expect(
+      image.OriginalWidth,
+      "OriginalWidth should exceed the display cap",
+    ).toBeGreaterThan(TIER_MAX_PIXELS["Medium"]);
 
-    expect(largest.width).toBeGreaterThan(0);
-    expect(largest.height).toBeGreaterThan(0);
-    expect(largest.url).toBeTruthy();
+    // Download the archived original and verify it's full resolution
+    const archivedBuffer = await api.downloadBuffer(image.ArchivedUri);
+    const archivedMeta = await sharp(archivedBuffer).metadata();
+    console.log(
+      `RC-02: Archived download: ${archivedMeta.width}x${archivedMeta.height}`,
+    );
+    expect(archivedMeta.width).toBe(sourceMeta.width);
+    expect(archivedMeta.height).toBe(sourceMeta.height);
   });
 
   // RC-03: Owner archived download is full resolution

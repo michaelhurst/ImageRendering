@@ -57,31 +57,49 @@ test.describe("MA (API): Metadata API Accuracy", () => {
   }) => {
     const richKey = await ensureRichUploaded(api, testAlbumUri);
     const meta = await api.getMetadata(richKey);
-    const required = [
-      "Make",
-      "Model",
-      "ExposureTime",
-      "FNumber",
-      "ISO",
-      "FocalLength",
-      "DateTimeOriginal",
+
+    // Each required field with alternate key names SmugMug might use
+    const required: [string, string[]][] = [
+      ["Make", ["Make", "CameraMake"]],
+      ["Model", ["Model", "CameraModel"]],
+      ["ExposureTime", ["ExposureTime", "Exposure", "ShutterSpeed"]],
+      ["FNumber", ["FNumber", "Aperture", "ApertureValue", "FStop"]],
+      ["ISO", ["ISO", "ISOSpeedRatings", "ISOSpeed", "Sensitivity"]],
+      ["FocalLength", ["FocalLength", "Focal"]],
+      [
+        "DateTimeOriginal",
+        [
+          "DateTimeOriginal",
+          "DateCreated",
+          "DateTimeCreated",
+          "CreateDate",
+          "DateTaken",
+        ],
+      ],
     ];
+
     const found: string[] = [];
     const missing: string[] = [];
 
-    for (const field of required) {
-      // Check various key name variants
-      const hasField =
-        meta[field] !== undefined ||
-        meta[field.replace("Time", "")] !== undefined ||
-        meta[`Camera${field}`] !== undefined;
-      if (hasField) found.push(field);
-      else missing.push(field);
+    for (const [label, variants] of required) {
+      const hasField = variants.some(
+        (v) => meta[v] !== undefined && meta[v] !== "" && meta[v] !== null,
+      );
+      if (hasField) {
+        found.push(label);
+      } else {
+        missing.push(label);
+      }
     }
 
     console.log(`Found: ${found.join(", ")}`);
     if (missing.length) console.log(`Missing: ${missing.join(", ")}`);
-    expect(found.length).toBeGreaterThanOrEqual(5); // At least 5 of 7 required fields
+
+    // All 7 fields should be present — the test image has full EXIF
+    expect(
+      found.length,
+      `Missing fields: ${missing.join(", ")}. Available keys: ${Object.keys(meta).join(", ")}`,
+    ).toBe(required.length);
   });
 
   // MA-02: !metadata for stripped image returns minimal set
@@ -188,27 +206,14 @@ test.describe("MA (API): Metadata API Accuracy", () => {
 
     // If !regions returns nothing, try checking the raw API response
     if (regions.length === 0) {
-      try {
-        const rawData = await api.get(`/api/v2/image/${key}-0!regions`);
-        console.log(
-          `MA-07: Raw !regions response: ${JSON.stringify(rawData.Response).slice(0, 500)}`,
-        );
-      } catch (err: any) {
-        console.log(`MA-07: !regions error: ${err.message}`);
-      }
-
-      // Also check if regions are in the image metadata
-      const meta = await api.getMetadata(key);
-      const regionKeys = Object.keys(meta).filter((k) =>
-        /region|face|area/i.test(k),
-      );
-      console.log(
-        `MA-07: Metadata region keys: ${regionKeys.join(", ") || "none"}`,
-      );
-
       test.skip(true, "XMP region parsing not available in this environment");
       return;
     }
-    expect(regions.length).toBeGreaterThan(0);
+
+    // Validate the region has expected structure
+    const region = regions[0];
+    expect(region.Type, "Region should have Type field").toBeTruthy();
+    console.log(`MA-07: Region type: ${region.Type}`);
+    expect(region.Type).toBe("Face");
   });
 });

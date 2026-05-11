@@ -59,9 +59,21 @@ test.describe("MD (API): Metadata Display in Lightbox", () => {
   async function openLightboxInfo(page: any, webUri: string) {
     await page.goto(webUri);
     await page.waitForLoadState("networkidle");
+
+    // Wait for the Lightbox to load — SmugMug image pages should show the
+    // image in a Lightbox-style view. Wait for a photos CDN image to appear.
+    await page.waitForTimeout(3000);
+
+    // If we're on a gallery page, click the image to open Lightbox
+    const imgInGallery = page.locator('img[src*="photos"]').first();
+    if (await imgInGallery.isVisible({ timeout: 2000 }).catch(() => false)) {
+      await imgInGallery.click();
+      await page.waitForTimeout(2000);
+    }
+
     // Try to open the info panel (press 'i' or click info button)
     await page.keyboard.press("i");
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(2000);
   }
 
   // MD-01: Lightbox info panel shows camera make/model
@@ -72,17 +84,45 @@ test.describe("MD (API): Metadata Display in Lightbox", () => {
   }) => {
     const { webUri: richWebUri } = await ensureRichUploaded(api, testAlbumUri);
     await openLightboxInfo(page, richWebUri);
+
+    // Debug: check what's on the page
+    const url = page.url();
     const body = await page.textContent("body");
-    // Look for camera info in the page content
+    console.log(`MD-01: URL: ${url}`);
+    console.log(`MD-01: Body length: ${body?.length}`);
+    console.log(
+      `MD-01: Body (first 300): ${body?.replace(/\s+/g, " ").slice(0, 300)}`,
+    );
+
+    // Look for info panel elements
+    const panels = await page.evaluate(() => {
+      const els = document.querySelectorAll(
+        '[class*="info"], [class*="meta"], [class*="detail"], [class*="exif"], [class*="camera"]',
+      );
+      return Array.from(els)
+        .filter((el) => (el as HTMLElement).offsetHeight > 0)
+        .map((el) => ({
+          cls: el.className.toString().slice(0, 60),
+          text: el.textContent?.slice(0, 80),
+        }));
+    });
+    console.log(`MD-01: Visible info elements: ${panels.length}`);
+    for (const p of panels.slice(0, 5)) {
+      console.log(`  .${p.cls}: "${p.text}"`);
+    }
+
     const hasCamera =
       body?.includes("Canon") ||
       body?.includes("Nikon") ||
       body?.includes("Sony") ||
       body?.includes("Apple") ||
       body?.includes("FUJIFILM") ||
-      body?.includes("camera");
+      body?.includes("EOS");
     console.log(`MD-01: Camera info found: ${hasCamera}`);
-    // Soft check — page structure varies
+    expect(
+      hasCamera,
+      "Camera make/model not found in Lightbox info",
+    ).toBeTruthy();
   });
 
   // MD-02: Lightbox info panel shows exposure settings
@@ -94,10 +134,16 @@ test.describe("MD (API): Metadata Display in Lightbox", () => {
     const { webUri: richWebUri } = await ensureRichUploaded(api, testAlbumUri);
     await openLightboxInfo(page, richWebUri);
     const body = await page.textContent("body");
-    // Look for exposure-related text (f/, ISO, shutter speed patterns)
     const hasExposure =
-      body?.match(/f\/\d/) || body?.match(/ISO\s*\d/) || body?.match(/1\/\d+/);
+      body?.match(/f\/\d/) ||
+      body?.match(/ISO\s+\d{2,}/) ||
+      body?.match(/1\/\d+/) ||
+      body?.match(/\d+\s*sec/i);
     console.log(`MD-02: Exposure info found: ${!!hasExposure}`);
+    expect(
+      hasExposure,
+      "Exposure settings not found in Lightbox info",
+    ).toBeTruthy();
   });
 
   // MD-03: Lightbox info panel shows focal length
@@ -111,6 +157,10 @@ test.describe("MD (API): Metadata Display in Lightbox", () => {
     const body = await page.textContent("body");
     const hasFocal = body?.match(/\d+\s*mm/i);
     console.log(`MD-03: Focal length found: ${!!hasFocal}`);
+    expect(
+      hasFocal,
+      "Focal length (Nmm) not found in Lightbox info",
+    ).toBeTruthy();
   });
 
   // MD-04: Lightbox info panel shows date taken
@@ -122,13 +172,13 @@ test.describe("MD (API): Metadata Display in Lightbox", () => {
     const { webUri: richWebUri } = await ensureRichUploaded(api, testAlbumUri);
     await openLightboxInfo(page, richWebUri);
     const body = await page.textContent("body");
-    // Look for date patterns
+    // The source image was taken on 2021-05-04
     const hasDate =
-      body?.match(/\d{4}/) &&
-      body?.match(
-        /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{1,2}\/\d{1,2})/i,
-      );
+      body?.includes("2021") ||
+      body?.includes("May") ||
+      body?.match(/05[\/-]04/);
     console.log(`MD-04: Date found: ${!!hasDate}`);
+    expect(hasDate, "Date taken not found in Lightbox info").toBeTruthy();
   });
 
   // MD-05: Lightbox shows GPS when Geography enabled
@@ -140,12 +190,13 @@ test.describe("MD (API): Metadata Display in Lightbox", () => {
     const { webUri: richWebUri } = await ensureRichUploaded(api, testAlbumUri);
     await openLightboxInfo(page, richWebUri);
     const body = await page.textContent("body");
-    // GPS data might show as coordinates or a map link
     const hasGPS =
-      body?.match(/\d+\.\d+/) ||
       body?.includes("Map") ||
-      body?.includes("Location");
+      body?.includes("Location") ||
+      body?.match(/\d{2,}\.\d+/) || // decimal coordinates
+      body?.includes("Yosemite"); // the test image is from Yosemite
     console.log(`MD-05: GPS/location info found: ${!!hasGPS}`);
+    expect(hasGPS, "GPS/location not found in Lightbox info").toBeTruthy();
   });
 
   // MD-06: Lightbox hides GPS when Geography disabled
@@ -326,10 +377,14 @@ test.describe("MD (API): Metadata Display in Lightbox", () => {
       api,
       testAlbumUri,
     );
+
+    // Register error listener BEFORE navigation
+    const errors: string[] = [];
+    page.on("pageerror", (err) => errors.push(err.message));
+
     await openLightboxInfo(page, strippedWebUri);
 
-    // The Lightbox renders images as hidden <img> elements.
-    // Check naturalWidth/naturalHeight directly to verify the image loaded.
+    // Verify the image loaded
     const dims = await page.evaluate(() => {
       const imgs = document.querySelectorAll("img");
       for (const img of imgs) {
@@ -357,13 +412,10 @@ test.describe("MD (API): Metadata Display in Lightbox", () => {
       console.log(`MD-09: Image loaded at ${dims.width}x${dims.height}`);
     }
 
-    // Check that no page errors occurred
-    const errors: string[] = [];
-    page.on("pageerror", (err) => errors.push(err.message));
-    await page.waitForTimeout(1000);
+    // Assert no page errors occurred during the entire interaction
     if (errors.length) {
       console.log(`MD-09: Page errors: ${errors.join(", ")}`);
     }
-    expect(errors).toHaveLength(0);
+    expect(errors, "Page errors occurred with stripped image").toHaveLength(0);
   });
 });

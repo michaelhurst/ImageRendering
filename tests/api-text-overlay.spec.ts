@@ -131,7 +131,9 @@ test.describe("TO (API): Text Over Image — HEIC Corner Case", () => {
     const mean = sum / count;
     const variance = sumSq / count - mean * mean;
     console.log(`TO-04: Laplacian variance: ${variance.toFixed(1)}`);
-    expect(variance).toBeGreaterThan(50);
+    // Typical value ~2445. Threshold of 500 catches severe blurring
+    // while allowing normal resize softening of text.
+    expect(variance).toBeGreaterThan(500);
   });
 
   // TO-05: Archived original is downloadable and valid

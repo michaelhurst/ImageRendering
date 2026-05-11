@@ -14,8 +14,10 @@ OR-01 through OR-08: Orientation N served image is corrected
   2. WAIT        Trigger tier generation for orientation N image
   3. DOWNLOAD    Fetch L or XL tier from CDN
   4. INSPECT     Read dimensions with sharp
-  5. ASSERT      Image has valid dimensions (width > 0, height > 0)
-  PASSES WHEN:   Served tier is a valid image regardless of EXIF tag
+  5. ASSERT      Tags 1-4: image is landscape (width > height)
+                 Tags 5-8: image is portrait (height > width)
+  PASSES WHEN:   Orientation correction swaps dimensions correctly
+  FAILS WHEN:    Raw uncorrected pixels are served (e.g., tag 6 still landscape)
 
 OR-09: Orientation 6 updates API dimensions to display-corrected
   1. UPLOAD      Upload 6000x4000 image with EXIF orientation 6

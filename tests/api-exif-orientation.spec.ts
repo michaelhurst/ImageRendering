@@ -69,7 +69,10 @@ test.describe("OR (API): EXIF Orientation", () => {
     return _orient6Key;
   }
 
-  // OR-01 through OR-08: Each orientation displays upright after correction
+  // OR-01 through OR-08: Each orientation displays correctly after correction
+  // Source images are all landscape (400x300 raw pixels).
+  // Tags 1-4: no dimension swap → served image should be landscape (width > height)
+  // Tags 5-8: 90°/270° rotation swaps dimensions → served image should be portrait (height > width)
   for (const [tag, filename] of ORIENTATION_IMAGES) {
     test(`OR-0${tag}: Orientation ${tag} (${filename}) served image is corrected`, async ({
       api,
@@ -86,8 +89,20 @@ test.describe("OR (API): EXIF Orientation", () => {
       const sharp = require("sharp");
       const meta = await sharp(tierBuffer).metadata();
       console.log(`OR-0${tag}: served ${meta.width}x${meta.height}`);
-      expect(meta.width).toBeGreaterThan(0);
-      expect(meta.height).toBeGreaterThan(0);
+
+      if (tag <= 4) {
+        // Orientations 1-4: no dimension swap, image stays landscape
+        expect(
+          meta.width,
+          `Orientation ${tag} should be landscape (width > height) but got ${meta.width}x${meta.height}`,
+        ).toBeGreaterThan(meta.height!);
+      } else {
+        // Orientations 5-8: 90°/270° rotation, image becomes portrait
+        expect(
+          meta.height,
+          `Orientation ${tag} should be portrait (height > width) but got ${meta.width}x${meta.height}`,
+        ).toBeGreaterThan(meta.width!);
+      }
     });
   }
 
