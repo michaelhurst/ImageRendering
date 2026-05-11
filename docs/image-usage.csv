@@ -1,57 +1,46 @@
-Image File,Used By (Local),Used By (API)
-c-color-16bit-gradient.tiff,CL-07,
-c-color-blackwhite.jpg,CL-08,
-c-color-blackwhite.json,CL-08,
-c-color-checker-adobergb.jpg,CL-02,
-c-color-checker-adobergb.json,CL-02,
-c-color-checker-prophoto.jpg,CL-03,
-c-color-checker-prophoto.json,CL-03,
-c-color-checker-srgb.jpg,CL-01,
-c-color-checker-srgb.json,CL-01,
-c-color-cmyk.jpg,CL-06,
-c-color-grayscale-ramp.jpg,CL-09,
-c-color-grayscale-ramp.json,CL-09,
-c-color-icc-custom.jpg,CL-04,
-c-color-saturated-patches.jpg,CL-10,
-c-color-saturated-patches.json,CL-10,
-c-color-untagged.jpg,CL-05,
-c-Landscape_6-Rotated-90-CW-6000x4000.jpg,OR-06,"OR-09, OR-10, OR-11, OR-12"
-c-metadata-xmp-regions.jpg,,MA-07
-c-poi-test.jpg,"POI-01, POI-02, POI-04, POI-05","POI-01, POI-02, POI-03, POI-04, POI-05"
-c-resolution-cap-test.jpg,"RC-01, RC-03","RC-01, RC-02, RC-03, RC-04"
-c-sizing-landscape.jpg,"IR (all 26), POI-03","SZ-01, SZ-02, SZ-03, SZ-09, SZ-10, SZ-11, POI-03"
-c-sizing-panoramic.jpg,SZ-04,SZ-06
-c-sizing-portrait.jpg,SZ-02,SZ-04
-c-sizing-small.jpg,"SZ-06, SZ-07, WM-01",SZ-08
-c-sizing-square.jpg,SZ-03,SZ-05
-c-sizing-tall.jpg,SZ-05,SZ-07
-c-watermark-test.jpg,"WM-02, WM-03, WM-04","WM-01, WM-02, WM-03, WM-04, WM-05"
-Landscape_1-Normal.jpg,"OR-01, OR-02, OR-03, OR-04, OR-07",OR-01
-Landscape_2-Mirrored-horizontal.jpg,"OR-01, OR-02, OR-03",OR-02
-Landscape_3-Rotated-180.jpg,"OR-01, OR-02, OR-03, OR-07",OR-03
-Landscape_4-Mirrored-vertical.jpg,"OR-01, OR-02, OR-03",OR-04
-Landscape_5-Mirrored-horizontal-rotated-270-CW.jpg,"OR-01, OR-02, OR-03",OR-05
-Landscape_6-Rotated-90-CW.jpg,"OR-01, OR-02, OR-03",OR-06
-Landscape_7-Mirrored-horizontal-rotated-90-CW.jpg,"OR-01, OR-02, OR-03",OR-07
-Landscape_8-Rotated-270-CW.jpg,"OR-01, OR-02, OR-03",OR-08
-Landscape_orientation-reference.jpg,OR-08,
-Landscape_{1-8} + Portrait_{1-8} (all 16),"MP-10, WM-05",
-metadata-iptc.jpg,"MP-09, MD-01, MD-02, MD-03, MD-04","MP-12, MP-13"
-metadata-rich.jpg,"MP-01, MP-02, MP-03, MP-04, MP-05, MP-06, MP-07, MA-01, MA-02, MA-03, MD-05","MP-01 through MP-11, MP-14, MA-01, MA-03, MA-04, MA-05, MA-06, MD-01 through MD-05"
-metadata-stripped.jpg,"MP-08, MD-06","MA-02, MD-09"
-Portrait_1-Normal.jpg,"OR-01, OR-02, OR-03, OR-05",
-Portrait_2-Mirrored-horizontal.jpg,"OR-01, OR-02, OR-03",
-Portrait_3-Rotated-180.jpg,"OR-01, OR-02, OR-03",
-Portrait_4-Mirrored-vertical.jpg,"OR-01, OR-02, OR-03",
-Portrait_5-Mirrored-horizontal-rotated-270-CW.jpg,"OR-01, OR-02, OR-03",
-Portrait_6-Rotated-90-CW.jpg,"OR-01, OR-02, OR-03",
-Portrait_7-Mirrored-horizontal-rotated-90-CW.jpg,"OR-01, OR-02, OR-03",
-Portrait_8-Rotated-270-CW.jpg,"OR-01, OR-02, OR-03",
-Portrait-orientation-reference.jpg,OR-08,
-quality-detail.jpg,"IQ-01, IQ-02, IQ-03, IQ-05, IQ-07, IQ-09","IQ-01, IQ-02, IQ-03, IQ-04"
-quality-noisy.jpg,IQ-08,IQ-09
-quality-reference.gif,,IQ-07
-quality-reference.heic,,IQ-08
-quality-reference.png,"IQ-02, IQ-04, IQ-06, IQ-09","IQ-05, IQ-06"
-quality-resolution-chart.jpg,"RC-02, RC-03, RC-04",IQ-10
-text-over-image.heic,,"TO-01, TO-02, TO-03, TO-04, TO-05"
+Image File,Used By (Local),Used By (API),Notes
+c-color-16bit-gradient.tiff,CL-07,,16-bit TIFF gradient for banding detection
+c-color-blackwhite.jpg,CL-08,,Black/white/gray patches
+c-color-blackwhite.json,CL-08,,Patch coordinates and expected RGB values
+c-color-checker-adobergb.jpg,CL-02,,Adobe RGB color checker
+c-color-checker-adobergb.json,CL-02,,sRGB-converted target values
+c-color-checker-prophoto.jpg,CL-03,,ProPhoto RGB color checker
+c-color-checker-prophoto.json,CL-03,,sRGB-converted target values
+c-color-checker-srgb.jpg,CL-01,,sRGB color checker
+c-color-checker-srgb.json,CL-01,,Patch coordinates and expected RGB values
+c-color-cmyk.jpg,CL-06,,CMYK color space test image
+c-color-grayscale-ramp.jpg,CL-09,,11-step grayscale ramp
+c-color-grayscale-ramp.json,CL-09,,Expected luminance values per step
+c-color-icc-custom.jpg,CL-04,,Image with custom ICC profile
+c-color-saturated-patches.jpg,CL-10,,R/G/B/C/M/Y saturated patches
+c-color-saturated-patches.json,CL-10,,Expected RGB values per patch
+c-color-untagged.jpg,CL-05,,Image with no ICC profile
+c-Landscape_6-Rotated-90-CW-6000x4000.jpg,,"OR-09, OR-10, OR-11, OR-12","6000x4000 raw, orientation 6 (displays as 4000x6000 portrait)"
+c-metadata-xmp-regions.jpg,,MA-07,"Contains XMP face region (""Test Face"" at center)"
+c-poi-test.jpg,,(disabled POI tests),Subject in top-left quadrant
+c-resolution-cap-test.jpg,,"RC-01, RC-02, RC-03, RC-04","6000x4000, 15.6MB high-res test image"
+c-sizing-landscape.jpg,IR (all 26),"SZ-01, SZ-02, SZ-03, SZ-09, SZ-10, SZ-11","6000x4000, canonical landscape fixture"
+c-sizing-panoramic.jpg,,SZ-06,"12000x2000, extreme landscape (6:1 ratio)"
+c-sizing-portrait.jpg,,SZ-04,"4000x6000, portrait fixture"
+c-sizing-small.jpg,,SZ-08,"400x300, tests upscaling prevention"
+c-sizing-square.jpg,,SZ-05,"5000x5000, square fixture"
+c-sizing-tall.jpg,,SZ-07,"2000x10000, extreme portrait (1:5 ratio)"
+c-watermark-test.jpg,,"WM-01, WM-02, WM-03, WM-04, WM-05","254KB, watermark test fixture"
+Landscape_1-Normal.jpg,,OR-01,Orientation tag 1 (normal)
+Landscape_2-Mirrored-horizontal.jpg,,OR-02,Orientation tag 2
+Landscape_3-Rotated-180.jpg,,OR-03,Orientation tag 3
+Landscape_4-Mirrored-vertical.jpg,,OR-04,Orientation tag 4
+Landscape_5-Mirrored-horizontal-rotated-270-CW.jpg,,OR-05,Orientation tag 5 (dimension swap)
+Landscape_6-Rotated-90-CW.jpg,,OR-06,Orientation tag 6 (dimension swap)
+Landscape_7-Mirrored-horizontal-rotated-90-CW.jpg,,OR-07,Orientation tag 7 (dimension swap)
+Landscape_8-Rotated-270-CW.jpg,,OR-08,Orientation tag 8 (dimension swap)
+metadata-iptc.jpg,,"MP-12, MP-13","IPTC caption and keywords (Lab, ball, dog, grass)"
+metadata-rich.jpg,,"MP-01–11, MP-14, MA-01, MA-03–06, MD-01–09","Canon EOS 6D Mark II, full EXIF, GPS (Yosemite)"
+metadata-stripped.jpg,,"MA-02, MD-09",No EXIF data at all
+quality-detail.jpg,,"IQ-01, IQ-02, IQ-04","62MB high-detail JPEG"
+quality-noisy.jpg,,IQ-09,"16MB high-ISO noisy image"
+quality-reference.gif,,IQ-07,"22KB GIF for lossless archive test"
+quality-reference.heic,,IQ-08,"2.3MB HEIC for conversion test"
+quality-reference.png,,IQ-05,"132MB lossless PNG (16592x5352 panoramic)"
+quality-resolution-chart.jpg,,IQ-10,"1.3MB fine-line resolution chart"
+text-over-image.heic,,"TO-01, TO-02, TO-03, TO-04, TO-05","8.5MB portrait HEIC with text overlay"
