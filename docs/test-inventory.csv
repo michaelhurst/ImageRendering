@@ -1,88 +1,108 @@
-Suite,ID,Test Name,Status,Type,Confidence
-Color Accuracy,CL-01,sRGB color checker patches match expected RGB values,Active,Local,High
-Color Accuracy,CL-02,Adobe RGB color checker patches within Delta-E of sRGB targets,Active,Local,High
-Color Accuracy,CL-03,ProPhoto RGB color checker patches within Delta-E of sRGB targets,Active,Local,High
-Color Accuracy,CL-04,Custom ICC profile image has embedded ICC profile,Active,Local,High
-Color Accuracy,CL-05,Untagged image has no embedded ICC profile,Active,Local,High
-Color Accuracy,CL-06,CMYK image is detected as CMYK color space,Active,Local,High
-Color Accuracy,CL-07,16-bit gradient has smooth tonal transitions,Active,Local,High
-Color Accuracy,CL-08,Black and white point pixels match expected values,Active,Local,High
-Color Accuracy,CL-09,Grayscale ramp steps match expected luminance values,Active,Local,High
-Color Accuracy,CL-10,Saturated color patches match expected RGB values,Active,Local,High
-Image Render,IR (x26),Image renders and screenshot matches baseline at each tier,Active,Local,High
-EXIF Orientation (API),OR-01,Orientation 1 served as landscape,Active,API,Medium-High
-EXIF Orientation (API),OR-02,Orientation 2 served as landscape,Active,API,Medium-High
-EXIF Orientation (API),OR-03,Orientation 3 served as landscape,Active,API,Medium-High
-EXIF Orientation (API),OR-04,Orientation 4 served as landscape,Active,API,Medium-High
-EXIF Orientation (API),OR-05,Orientation 5 served as portrait,Active,API,Medium-High
-EXIF Orientation (API),OR-06,Orientation 6 served as portrait,Active,API,Medium-High
-EXIF Orientation (API),OR-07,Orientation 7 served as portrait,Active,API,Medium-High
-EXIF Orientation (API),OR-08,Orientation 8 served as portrait,Active,API,Medium-High
-EXIF Orientation (API),OR-09,Orientation 6 API dimensions display-corrected,Active,API,High
-EXIF Orientation (API),OR-10,Orientation 6 portrait across all tiers,Active,API,High
-EXIF Orientation (API),OR-11,Orientation 6 renders as portrait in Lightbox,Active,API,High
-EXIF Orientation (API),OR-12,Orientation 6 thumbnail is portrait in gallery,Active,API,High
-Image Quality (API),IQ-01,JPEG quality preserved at each CDN size tier,Active,API,High
-Image Quality (API),IQ-02,Original download matches uploaded file,Active,API,High
-Image Quality (API),IQ-04,No double-compression on JPEG uploads,Active,API,High
-Image Quality (API),IQ-05,PNG served losslessly at original size,Active,API,High
-Image Quality (API),IQ-07,GIF upload preserves original,Active,API,High
-Image Quality (API),IQ-08,HEIC upload produces viewable JPEG conversion,Active,API,Medium-High
-Image Quality (API),IQ-09,High-ISO image doesn't gain artifacts after resize,Active,API,High
-Image Quality (API),IQ-10,Image sharpness maintained after resize,Active,API,High
-Image Sizing (API),SZ-01,Each CDN tier serves correct pixel dimensions,Active,API,High
-Image Sizing (API),SZ-02,Aspect ratio preserved across all tiers,Active,API,High
-Image Sizing (API),SZ-03,Landscape image longest edge matches tier spec,Active,API,High
-Image Sizing (API),SZ-04,Portrait image longest edge matches tier spec,Active,API,High
-Image Sizing (API),SZ-05,Square image both edges match tier spec,Active,API,High
-Image Sizing (API),SZ-06,Panoramic image sizing preserves aspect ratio,Active,API,High
-Image Sizing (API),SZ-07,Very tall image sizing preserves aspect ratio,Active,API,High
-Image Sizing (API),SZ-08,Small source not upscaled beyond original,Active,API,High
-Image Sizing (API),SZ-09,!largestimage returns highest available dimensions,Active,API,High
-Image Sizing (API),SZ-10,OriginalWidth/Height match source file,Active,API,High
-Image Sizing (API),SZ-11,OriginalSize matches source file byte count,Active,API,High
-Metadata API,MA-01,!metadata returns all key EXIF fields,Active,API,High
-Metadata API,MA-02,!metadata for stripped image returns without error,Active,API,High
-Metadata API,MA-03,Format field matches uploaded file format,Active,API,High
-Metadata API,MA-04,FileName preserves original filename,Active,API,High
-Metadata API,MA-05,KeywordArray round-trips correctly,Active,API,High
-Metadata API,MA-06,Title/Caption round-trip with special characters,Active,API,High
-Metadata API,MA-07,!regions returns face/object regions for XMP image,Active,API,High
-Metadata Preservation (API),MP-01,Camera make and model preserved (value match),Active,API,High
-Metadata Preservation (API),MP-02,Exposure settings preserved (value match),Active,API,High
-Metadata Preservation (API),MP-03,Focal length preserved (value match),Active,API,High
-Metadata Preservation (API),MP-04,DateTimeOriginal preserved (date match),Active,API,High
-Metadata Preservation (API),MP-05,GPS coordinates preserved (4 decimal places),Active,API,High
-Metadata Preservation (API),MP-06,GPS matches between image and metadata endpoints,Active,API,High
-Metadata Preservation (API),MP-07,Lens info preserved (focal numbers match),Active,API,High
-Metadata Preservation (API),MP-08,White balance preserved,Active,API,High
-Metadata Preservation (API),MP-09,Flash status preserved,Active,API,High
-Metadata Preservation (API),MP-10,Copyright field preserved (exact match),Active,API,High
-Metadata Preservation (API),MP-11,Artist/Author field preserved (exact match),Active,API,High
-Metadata Preservation (API),MP-12,IPTC caption preserved as Caption (content match),Active,API,High
-Metadata Preservation (API),MP-13,IPTC keywords preserved as Keywords (all present),Active,API,High
-Metadata Preservation (API),MP-14,UserComment EXIF field preserved,Active,API,High
-Metadata Display (API),MD-01,Lightbox info panel shows camera make/model,Active,API/UI,High
-Metadata Display (API),MD-02,Lightbox info panel shows exposure settings,Active,API/UI,High
-Metadata Display (API),MD-03,Lightbox info panel shows focal length,Active,API/UI,High
-Metadata Display (API),MD-04,Lightbox info panel shows date taken,Active,API/UI,High
-Metadata Display (API),MD-05,Lightbox shows GPS when Geography enabled,Active,API/UI,High
-Metadata Display (API),MD-06,Lightbox hides GPS when Geography disabled [VISITOR],Active,API/UI,High
-Metadata Display (API),MD-07,Lightbox hides GPS when site-level GPS off [VISITOR],Active,API/UI,High
-Metadata Display (API),MD-08,EXIF hidden when gallery EXIF setting is off [VISITOR],Active,API/UI,High
-Metadata Display (API),MD-09,Stripped image info panel displays without defects,Active,API/UI,High
-Resolution Cap (API),RC-01,All LargestSize settings cap visitor tiers [VISITOR],Active,API,High
-Resolution Cap (API),RC-02,Owner can download full resolution despite cap,Active,API,High
-Resolution Cap (API),RC-03,Owner archived download is full resolution,Active,API,High
-Resolution Cap (API),RC-04,Lightbox image respects resolution cap [VISITOR],Active,API/UI,High
-Text Overlay (API),TO-01,HEIC with text overlay converts to viewable JPEG tiers,Active,API,High
-Text Overlay (API),TO-02,Converted image preserves portrait orientation,Active,API,High
-Text Overlay (API),TO-03,All size tiers maintain portrait aspect ratio,Active,API,High
-Text Overlay (API),TO-04,Text sharpness preserved in converted L tier,Active,API,High
-Text Overlay (API),TO-05,Archived original is downloadable and valid,Active,API,High
-Watermark (API),WM-01,Watermark present on visitor-facing tiers [VISITOR],Active,API,High
-Watermark (API),WM-02,Owner download has no watermark (MD5 matches source),Active,API,High
-Watermark (API),WM-03,Archived original has no watermark,Active,API,High
-Watermark (API),WM-04,Watermark applied at both small and large sizes [VISITOR],Active,API,High
-Watermark (API),WM-05,All tiers have watermark applied [VISITOR],Active,API,High
-Point of Interest (API),POI-01–05,Point of Interest tests,Disabled,API,N/A — !pointofinterest API returns null
+,ID,Test Name,Action,Description,Image(s) Used,Expected Values,Failure Means,Confidence
+Color Accuracy,,,,,,,,
+,CL-01,sRGB color checker patches match expected RGB values,Samples pixels at patch coordinates and computes CIE76 Delta-E against expected sRGB values (threshold ≤ 5),"Reads the sRGB color checker image and its companion JSON file containing known patch coordinates and expected RGB values. Samples the actual pixel color at each coordinate using sharp, then computes the CIE76 Delta-E perceptual color difference between expected and actual. Fails if any patch exceeds a Delta-E of 5.",c-color-checker-srgb.jpg + c-color-checker-srgb.json,Delta-E < 5 for all patches,Color shifts introduced by re-encoding or profile mismatches,High
+,CL-02,Adobe RGB color checker patches within Delta-E of sRGB targets,Same patch sampling with wider gamut tolerance (threshold ≤ 25) for Adobe RGB color space conversion,"Reads the Adobe RGB color checker image and its JSON file listing sRGB-converted target values. Samples pixels at each patch coordinate and computes Delta-E against the sRGB targets. Uses a wider threshold of 25 to account for gamut mapping differences.",c-color-checker-adobergb.jpg + c-color-checker-adobergb.json,Delta-E < 25 for all patches,Wider-gamut images produce wildly wrong colors after conversion to sRGB,High
+,CL-03,ProPhoto RGB color checker patches within Delta-E of sRGB targets,Same patch sampling with wider gamut tolerance (threshold ≤ 25) for ProPhoto RGB gamut,"Same approach as CL-02 but for ProPhoto RGB, the widest gamut commonly used by cameras. Checks Delta-E ≤ 25.",c-color-checker-prophoto.jpg + c-color-checker-prophoto.json,Delta-E < 25 for all patches,ProPhoto gamut conversion produces extreme color drift,High
+,CL-04,Custom ICC profile image has embedded ICC profile,Checks that sharp detects an ICC profile in the image metadata,"Opens the custom ICC profile image with sharp and inspects its metadata to confirm an ICC profile buffer is present.",c-color-icc-custom.jpg,ICC profile present in metadata,Pipeline strips custom ICC profiles during processing,High
+,CL-05,Untagged image has no embedded ICC profile,Confirms no ICC profile is present in the untagged fixture,"Opens the untagged image with sharp and confirms the ICC metadata field is falsy. Negative control for CL-04.",c-color-untagged.jpg,No ICC profile in metadata,Test fixture is invalid (has profile when it shouldn't),High
+,CL-06,CMYK image is detected as CMYK color space,Verifies metadata.space === cmyk,"Opens the CMYK test image with sharp and checks that metadata.space reports 'cmyk'.",c-color-cmyk.jpg,space=cmyk and channels=4,CMYK images misidentified — would break downstream conversion tests,High
+,CL-07,16-bit gradient has smooth tonal transitions,Measures mean adjacent pixel difference along the middle row (must be < 5),"Reads the 16-bit TIFF gradient image, converts to 8-bit greyscale, walks across the middle row measuring adjacent pixel differences. Mean must be < 5.",c-color-16bit-gradient.tiff,Mean adjacent diff < 5,Banding from bit-depth reduction or aggressive compression,High
+,CL-08,Black and white point pixels match expected values,Samples black/white/midgray patches at known coordinates (Delta-E ≤ 5),"Reads the black/white test image and its JSON file. Samples RGB at each coordinate and computes Delta-E against expected values.",c-color-blackwhite.jpg + c-color-blackwhite.json,Delta-E < 5 for all patches,Level shifts where blacks get lifted or whites get crushed,High
+,CL-09,Grayscale ramp steps match expected luminance values,Samples 11 grayscale steps and compares measured luminance to expected values (tolerance ≤ 15),"Reads the 11-step grayscale ramp image and its JSON file. Samples pixels, computes weighted luminance, compares against expected.",c-color-grayscale-ramp.jpg + c-color-grayscale-ramp.json,Luminance diff < 15 per step,Gamma curve errors or tone mapping issues,High
+,CL-10,Saturated color patches match expected RGB values,Samples R/G/B/C/M/Y patches (Delta-E ≤ 5),"Reads the saturated patches image. Samples actual pixels and computes Delta-E against expected RGB values.",c-color-saturated-patches.jpg + c-color-saturated-patches.json,Delta-E < 5 for all patches,Desaturation or hue rotation in fully saturated colors,High
+,,,,,,,,
+Image Render,,,,,,,,
+,IR (x26),Image renders and screenshot matches baseline at each tier,"Loads image at each viewport size, takes screenshot, compares against saved baseline","Opens browser at each SmugMug tier viewport size (Ti through O), injects test image as data URL, verifies it renders (naturalWidth > 0), then compares screenshot against saved baseline PNG.",c-sizing-landscape.jpg,Pixel-perfect match against baselines in tests/baselines/,Browser rendering regression — images display differently than expected,High
+,,,,,,,,
+API Tests,,,,,,,,
+Image Quality (API),,,,,,,,
+,IQ-01,JPEG quality preserved at each CDN size tier,Uploads JPEG and computes SSIM per tier against locally resized version,"Uploads quality-detail.jpg (62MB). Waits for tier generation. For each tier (S through 5K): downloads from CDN, resizes source locally to same dimensions at Q95, computes SSIM. Both images normalized to identical pixel grid before comparison.",quality-detail.jpg,SSIM 0.998-0.999 per tier (threshold >= 0.9),A specific tier is over-compressed or serving wrong content — visible quality degradation,High
+,IQ-02,Original download matches uploaded file,Compares ArchivedSize against source file byte count and verifies ArchivedUri present,"Uploads quality-detail.jpg. Reads ArchivedSize from API and asserts it matches source file byte count exactly (62519806 bytes). Verifies ArchivedUri is present.",quality-detail.jpg,ArchivedSize = 62519806 bytes,Pipeline silently re-encodes or modifies the original — photographer's master copy altered,High
+,IQ-03,REMOVED — merged into IQ-02,Test removed — redundant with IQ-02 ArchivedSize check,This test was identical to the ArchivedSize assertion already in IQ-02. Removed to eliminate redundancy.,,N/A,N/A,N/A
+,IQ-04,No double-compression on JPEG uploads,Waits for tiers then compares SSIM against locally resized Q95 using actual downloaded dimensions,"Uploads quality-detail.jpg. Waits for L tier. Downloads it and reads actual dimensions. Resizes source locally to those exact dimensions at Q95. Computes SSIM.",quality-detail.jpg,SSIM ~0.999 (threshold >= 0.9),Double-compression artifacts from re-encoding an already-compressed JPEG,High
+,IQ-05,PNG served losslessly at original size,Checks ArchivedSize matches source file byte count,"Uploads quality-reference.png (132MB). Reads ArchivedSize from API. Asserts exact match with source byte count. Verifies ArchivedUri present.",quality-reference.png,ArchivedSize = 132514597 bytes,PNG originals converted to lossy format during storage,High
+,IQ-06,REMOVED — panoramic PNG tier comparison not meaningful,Test removed,"The 132MB panoramic PNG (16592x5352) produced tiers that SmugMug may crop differently than a proportional resize. SSIM comparison was not meaningful.",,N/A,N/A,N/A
+,IQ-07,GIF upload preserves original,Uploads GIF and verifies ArchivedUri MD5 matches source,"Uploads quality-reference.gif (22KB). Downloads archived file. Computes MD5 hex hash and compares against source.",quality-reference.gif,MD5 exact match,GIF re-encoded or converted — would break animations,High
+,IQ-08,HEIC upload produces viewable JPEG conversion,Uploads HEIC and verifies valid JPEG tier; SSIM check if HEIC decode available,"Uploads quality-reference.heic (2.3MB). Waits for tiers. Downloads L/XL tier. Verifies JPEG magic bytes and positive dimensions. If sharp can decode HEIC locally: computes SSIM against locally-converted reference.",quality-reference.heic,Valid JPEG at ~450x600; SSIM >= 0.9 when available,HEIC conversion broken — iPhone photos show as broken images,Medium-High
+,IQ-09,High-ISO image doesn't gain artifacts after resize,Uploads noisy image and compares L tier SSIM against locally resized version,"Uploads quality-noisy.jpg (16MB high-ISO). Gets L tier dimensions. Downloads it. Resizes source locally to same dimensions. Computes SSIM.",quality-noisy.jpg,SSIM ~0.999 (threshold >= 0.9),Resize pipeline amplifies noise or adds sharpening halos,High
+,IQ-10,Image sharpness maintained after resize,Uploads resolution chart and measures Laplacian variance on M and L tiers (threshold > 500),"Uploads quality-resolution-chart.jpg (1.3MB fine-line chart). Downloads M and L tiers. Computes Laplacian variance on each.",quality-resolution-chart.jpg,"M ~9300, L ~8600 (threshold > 500)",Resize pipeline over-smooths fine detail — text and edges become blurry,High
+,,,,,,,,
+Image Sizing (API),,,,,,,,
+,SZ-01,Each CDN tier serves correct pixel dimensions,Downloads each tier and verifies actual dimensions match !sizedetails,"Uploads c-sizing-landscape.jpg (6000x4000). For each tier: downloads actual image, reads dimensions with sharp, asserts match against API-reported values (±1px).",c-sizing-landscape.jpg,"Ti=100x67, S=400x267, M=600x400, L=800x533, XL=1024x683, etc.",API reports wrong dimensions or CDN serves wrong-sized images,High
+,SZ-02,Aspect ratio preserved across all tiers,Compares each tier's aspect ratio against OriginalWidth/OriginalHeight,"Computes source ratio (1.5:1). For each non-original tier, computes tier ratio. Asserts drift <= 0.02. Skips square-cropped Ti/Th.",c-sizing-landscape.jpg,Ratio drift <= 0.02 from 1.5:1,Cropping or stretching introduced during resize,High
+,SZ-03,Landscape image longest edge matches tier spec,Verifies each tier's longest edge matches expected pixel spec (±1px),"Queries !sizedetails. For each tier, compares longest edge against expected spec.",c-sizing-landscape.jpg,"Ti=100, Th=150, S=400, M=600, L=800, XL=1024, X2L=1280, X3L=1600, X4L=2048, X5L=2560, 4K=3840, 5K=5120",Tier generation using wrong target dimensions,High
+,SZ-04,Portrait image longest edge matches tier spec,"Uploads 4000x6000 portrait, verifies height >= width at every tier","Uploads c-sizing-portrait.jpg. For each non-original tier, asserts height >= width.",c-sizing-portrait.jpg,All tiers portrait (height >= width),Orientation-unaware resize treats all images as landscape,High
+,SZ-05,Square image both edges match tier spec,"Uploads 5000x5000 square, verifies width === height at every tier","Uploads c-sizing-square.jpg. For each non-original tier, asserts width === height.",c-sizing-square.jpg,All tiers square (width = height),Rounding errors break 1:1 aspect ratio,High
+,SZ-06,Panoramic image sizing preserves aspect ratio,"Uploads 12000x2000 panoramic, checks ratio drift per tier","Uploads c-sizing-panoramic.jpg (6:1 ratio). Checks ratio drift <= 0.1 per tier.",c-sizing-panoramic.jpg,Ratio drift <= 0.1 from 6:1,Extreme aspect ratios cropped or padded,High
+,SZ-07,Very tall image sizing preserves aspect ratio,"Uploads 2000x10000 tall image, checks ratio drift per tier","Uploads c-sizing-tall.jpg (1:5 ratio). Checks ratio drift <= 0.1 per tier.",c-sizing-tall.jpg,Ratio drift <= 0.1 from 1:5,Extreme portrait images truncated or padded,High
+,SZ-08,Small source not upscaled beyond original,"Uploads 400x300 image, verifies no tier exceeds 400x300","Uploads c-sizing-small.jpg. Asserts every tier width <= 400 and height <= 300.",c-sizing-small.jpg,No tier exceeds 400x300,CDN generates blurry upscaled versions larger than source,High
+,SZ-09,!largestimage returns highest available dimensions,Queries !largestimage and verifies it's actually the largest tier available,"Queries !largestimage and !sizedetails. Asserts no other tier has a larger longest edge than what !largestimage reports.",c-sizing-landscape.jpg,!largestimage = 5120x3413 (5K tier); no tier larger,Clients get smaller image than what's actually available,High
+,SZ-10,OriginalWidth/Height match source file,Compares API OriginalWidth/OriginalHeight against sharp metadata of source,"Reads source dimensions with sharp. Queries API. Asserts exact match.",c-sizing-landscape.jpg,6000x4000 exact match,Dimension reporting bug breaks client layout calculations,High
+,SZ-11,OriginalSize matches source file byte count,Compares API OriginalSize against source file byte count,"Reads source byte count. Queries API. Asserts exact match.",c-sizing-landscape.jpg,Exact byte count match,File size reporting error breaks download progress indicators,High
+,,,,,,,,
+EXIF Orientation (API),,,,,,,,
+,OR-01–04,Orientations 1-4 served as landscape,Uploads all 8 orientation variants and verifies tags 1-4 produce landscape output,"Uploads Landscape_1 through Landscape_8. For tags 1-4: downloads L/XL tier, reads dimensions, asserts width > height (landscape). Tags 1-4 don't swap dimensions.",Landscape_{1-4}-*.jpg,Served as ~400x300 (landscape),Pipeline incorrectly swapping dimensions for mirror/180° operations,Medium-High
+,OR-05–08,Orientations 5-8 served as portrait,Verifies tags 5-8 (90°/270° rotations) produce portrait output,"For tags 5-8: downloads L/XL tier, reads dimensions, asserts height > width (portrait). These tags involve dimension-swapping rotations.",Landscape_{5-8}-*.jpg,Served as ~450x600 (portrait),Images appear sideways — 90°/270° rotation not applied,Medium-High
+,OR-09,Orientation 6 API dimensions display-corrected,"Uploads 6000x4000 with orientation 6, checks OriginalWidth <= OriginalHeight","Uploads high-res orientation-6 image. Queries API. Asserts OriginalWidth <= OriginalHeight (portrait).",c-Landscape_6-Rotated-90-CW-6000x4000.jpg,API reports 4000x6000 (not raw 6000x4000),API clients get wrong dimensions for layout calculations,High
+,OR-10,Orientation 6 portrait across all tiers,Fetches all tiers and verifies height >= width,"Queries !sizedetails. Asserts height >= width for every non-original tier.",c-Landscape_6-Rotated-90-CW-6000x4000.jpg,All tiers portrait,Some tiers generated without orientation correction,High
+,OR-11,Orientation 6 renders as portrait in Lightbox,"Opens Lightbox, checks rendered image is portrait","Navigates to WebUri. Finds img element. Asserts naturalHeight > naturalWidth.",c-Landscape_6-Rotated-90-CW-6000x4000.jpg,Lightbox image taller than wide,Browser/Lightbox ignores orientation correction,High
+,OR-12,Orientation 6 thumbnail is portrait in gallery,"Opens gallery page, checks thumbnail is portrait","Navigates to album gallery page. Clicks image. Finds thumbnail img. Asserts height > width.",c-Landscape_6-Rotated-90-CW-6000x4000.jpg,Thumbnail taller than wide,Gallery shows sideways thumbnails,High
+,,,,,,,,
+Metadata API (API),,,,,,,,
+,MA-01,!metadata returns all key EXIF fields,Checks for 7 required fields using alternate key names,"Uploads metadata-rich.jpg. Queries !metadata. Checks Make/Model/ExposureTime/FNumber/ISO/FocalLength/DateTimeOriginal with alternate names. Requires all 7 present.",metadata-rich.jpg,"All 7 fields found (Make=Canon, Model=EOS 6D Mark II, ISO=100, FocalLength=105)",Metadata parsing drops fields — blank entries in photo info panel,High
+,MA-02,!metadata for stripped image returns without error,Queries !metadata for stripped image and verifies no camera fields,"Uploads metadata-stripped.jpg. Queries !metadata. Asserts no camera fields present and no error.",metadata-stripped.jpg,No camera fields; no HTTP error,API crashes when metadata is missing,High
+,MA-03,Format field matches uploaded file format,Checks Format field contains jpg,"Queries image record. Asserts Format contains 'jpg'.",metadata-rich.jpg,Format = JPG,Format misidentification causes wrong content-type headers,High
+,MA-04,FileName preserves original filename,Checks FileName field matches exactly,"Queries image record. Asserts FileName = 'metadata-rich.jpg'.",metadata-rich.jpg,FileName = metadata-rich.jpg,Filename mangled during upload,High
+,MA-05,KeywordArray round-trips correctly,"PUTs keywords, GETs image, verifies all returned","PUTs KeywordArray: ['sunset','ocean','HDR']. GETs image. Asserts all 3 present.",metadata-rich.jpg,All 3 keywords present after round-trip,Keywords lost during write/read cycle — breaks search,High
+,MA-06,Title/Caption round-trip with special characters,"PUTs unicode title/caption, verifies exact match","PUTs title with emojis/accents and caption with CJK/quotes. GETs image. Asserts exact match.",metadata-rich.jpg,Exact unicode match including 🌅 and 日本語,Encoding bugs mangle non-ASCII text,High
+,MA-07,!regions returns face/object regions for XMP image,"Uploads XMP regions image, queries !regions, validates Face type","Uploads c-metadata-xmp-regions.jpg. Waits 5s. Queries !regions. Asserts at least 1 region with Type='Face'. Skips if no regions returned.",c-metadata-xmp-regions.jpg,1 region with Type=Face,XMP face region parsing broken — people search won't work,High
+,,,,,,,,
+Metadata Preservation (API),,,,,,,,
+,MP-01,Camera make and model preserved (value match),Compares API Make/Model against source EXIF values,"Uploads metadata-rich.jpg. Reads source EXIF with exifr. Queries !metadata. Compares Make and Model (case-insensitive contains).",metadata-rich.jpg,"Make=Canon, Model contains EOS 6D Mark II",Pipeline strips or alters manufacturer identification,High
+,MP-02,Exposure settings preserved (value match),Compares API ExposureTime and ISO against source values,"Queries !metadata. Asserts ExposureTime matches source (numeric). Asserts ISO matches source.",metadata-rich.jpg,"ExposureTime=30, ISO=100",Core shooting parameters lost,High
+,MP-03,Focal length preserved (value match),Compares API FocalLength against source value,"Queries !metadata. Parses FocalLength. Asserts matches source (±1).",metadata-rich.jpg,FocalLength = 105mm,Lens data lost — photographers can't filter by focal length,High
+,MP-04,DateTimeOriginal preserved (date match),Compares API date against source year/month/day,"Queries !metadata. Checks DateTimeOriginal contains correct year (2021), month (05), day (04).",metadata-rich.jpg,Date contains 2021-05-04,Photo timeline and sorting broken,High
+,MP-05,GPS coordinates preserved (4 decimal places),Compares API Latitude/Longitude against source GPS,"Queries image record. Compares Latitude/Longitude against source exifr values using toBeCloseTo(4 decimals).",metadata-rich.jpg,"Lat ~37.6779, Lon ~-119.7364 (±0.0001)",Geotagging data lost — map features broken,High
+,MP-06,GPS matches between image and metadata endpoints,Cross-validates GPS between image object and !metadata,"Queries both endpoints. If image has non-zero Latitude, asserts !metadata agrees within 0.01°.",metadata-rich.jpg,Endpoints agree within 0.01°,Inconsistent GPS between API endpoints,High
+,MP-07,Lens info preserved (focal numbers match),Compares API lens string against source focal length numbers,"Queries !metadata for LensModel/LensInfo. Extracts numbers. Asserts source focal length numbers are present in API string.",metadata-rich.jpg,API lens contains 24 and 105 (from 24-105mm),Lens identification lost,High
+,MP-08,White balance preserved,Verifies WhiteBalance defined if present in source,"Queries !metadata. If source has WhiteBalance, asserts API returns it.",metadata-rich.jpg,WhiteBalance defined,White balance data stripped,High
+,MP-09,Flash status preserved,Verifies Flash defined if present in source,"Queries !metadata. If source has Flash, asserts API returns it.",metadata-rich.jpg,Flash defined,Flash data stripped,High
+,MP-10,Copyright field preserved (exact match),Compares API Copyright against source value,"Queries !metadata. Asserts Copyright matches source exactly.",metadata-rich.jpg,Copyright = ©2021 Chris Skopec,Copyright stripped — legal implications for photographers,High
+,MP-11,Artist/Author field preserved (exact match),Compares API Artist against source value,"Queries !metadata. Asserts Artist/Author matches source exactly.",metadata-rich.jpg,Artist = CHRIS SKOPEC,Attribution data lost,High
+,MP-12,IPTC caption preserved as Caption (content match),Compares API Caption against source IPTC caption,"Uploads metadata-iptc.jpg. Reads source IPTC with exifr. Queries image record. Asserts Caption contains source caption.",metadata-iptc.jpg,Caption contains source IPTC caption text,IPTC captions lost during upload,High
+,MP-13,IPTC keywords preserved as Keywords (all present),Verifies all source IPTC keywords present in API KeywordArray,"Uploads metadata-iptc.jpg. Reads source keywords. Queries image record. Asserts all source keywords present.",metadata-iptc.jpg,"All keywords present: Lab, ball, dog, grass",IPTC keywords lost — search broken,High
+,MP-14,UserComment EXIF field preserved,Compares API UserComment against source value,"Queries !metadata. If source has UserComment, asserts API contains it (encoding prefix stripped).",metadata-rich.jpg,UserComment contains source text,Free-text notes stripped,High
+,,,,,,,,
+Metadata Display (API),,,,,,,,
+,MD-01,Lightbox info panel shows camera make/model,Opens Lightbox and asserts camera brand name visible in page text,"Uploads metadata-rich.jpg. Navigates to WebUri. Clicks image into Lightbox. Presses 'i'. Asserts page contains Canon/EOS/Nikon/Sony.",metadata-rich.jpg,Camera brand name found in page text,Info panel not rendering camera data,High
+,MD-02,Lightbox info panel shows exposure settings,Checks page text for f-stop/ISO/shutter patterns,"Opens Lightbox info panel. Scans for f/N, ISO NNN, 1/N, or Nsec patterns.",metadata-rich.jpg,Exposure pattern found,Exposure settings not displayed to users,High
+,MD-03,Lightbox info panel shows focal length,Checks page text for Nmm pattern,"Opens Lightbox info panel. Scans for number followed by 'mm'.",metadata-rich.jpg,Focal length pattern found,Focal length not displayed,High
+,MD-04,Lightbox info panel shows date taken,Checks page text for date patterns,"Opens Lightbox info panel. Scans for 2021, May, or 05/04.",metadata-rich.jpg,Date pattern found,Date taken not displayed,High
+,MD-05,Lightbox shows GPS when Geography enabled,Checks page text for location references,"Opens Lightbox info panel. Scans for Map, Location, decimal coords, or Yosemite.",metadata-rich.jpg,Location reference found,GPS/location not displayed when enabled,High
+,MD-06,Lightbox hides GPS when Geography disabled [VISITOR],PATCHes album Geography=false then verifies visitor cannot see GPS,"PATCHes album Geography: false. Opens visitor browser context. Navigates to Lightbox. Asserts NO GPS/Map/Location text.",metadata-rich.jpg,No location text visible to visitor,Privacy setting not enforced — visitors see location,High
+,MD-07,Lightbox hides GPS when site-level GPS off [VISITOR],PATCHes user Geography=false then verifies visitor cannot see GPS,"PATCHes user Geography: false. Opens visitor context. Checks Lightbox. Restores setting after.",metadata-rich.jpg,No location text visible to visitor,Site-level privacy not enforced,High
+,MD-08,EXIF hidden when gallery EXIF setting is off [VISITOR],PATCHes album EXIF=false then verifies visitor cannot see camera info,"PATCHes album EXIF: false. Verifies setting applied. Opens visitor context. Asserts no f/N, ISO NNN, Nmm, Canon, Nikon patterns.",metadata-rich.jpg,No EXIF patterns visible to visitor,Camera info visible despite privacy setting,High
+,MD-09,Stripped image info panel displays without defects,Registers error listener before navigation then verifies no JS errors,"Registers pageerror listener. Uploads metadata-stripped.jpg. Opens Lightbox. Verifies image loads (naturalWidth > 0). Asserts zero page errors.",metadata-stripped.jpg,Image loads; zero page errors,Missing metadata causes JavaScript exceptions,High
+,,,,,,,,
+Resolution Cap (API),,,,,,,,
+,RC-01,All LargestSize settings cap visitor tiers [VISITOR],Sets each of 9 cap levels via API and verifies visitor tiers respect each,"Uploads high-res image. Creates visitor API client. For each cap (Medium through 5K): PATCHes album, queries !sizedetails as visitor, asserts largest tier <= cap pixels.",c-resolution-cap-test.jpg,"Medium=600, Large=800, XLarge=1024, X2Large=1280, X3Large=1600, X4Large=2048, X5Large=2560, 4K=3840, 5K=5120",Resolution cap not enforced — visitors access higher-res than intended,High
+,RC-02,Owner can download full resolution despite cap,Sets cap to Medium then verifies owner archived download is full-res,"PATCHes LargestSize=Medium (600px). Downloads ArchivedUri. Verifies dimensions match source exactly.",c-resolution-cap-test.jpg,Archived download = source dimensions (6000x4000),Cap incorrectly applied to owners — can't access own images,High
+,RC-03,Owner archived download is full resolution,Downloads ArchivedUri and verifies dimensions match source file,"Downloads archived file. Reads dimensions with sharp. Asserts match against source metadata.",c-resolution-cap-test.jpg,Archived = source dimensions exactly,Archive pipeline resizing originals,High
+,RC-04,Lightbox image respects resolution cap [VISITOR],Sets LargestSize=XLarge then opens visitor Lightbox and checks dimensions,"PATCHes LargestSize=XLarge (1024px). Opens visitor browser. Navigates to WebUri. Reads img naturalWidth/Height. Asserts longest edge <= 1024.",c-resolution-cap-test.jpg,Visitor Lightbox image <= 1024px longest edge,Cap bypassed at browser level,High
+,,,,,,,,
+Text Overlay (API),,,,,,,,
+,TO-01,HEIC with text overlay converts to viewable JPEG tiers,Uploads HEIC with text and verifies tier is valid JPEG,"Uploads text-over-image.heic (8.5MB portrait with text). Waits for tiers. Downloads tier. Verifies JPEG magic bytes and positive dimensions.",text-over-image.heic,Valid JPEG with dimensions > 0,HEIC conversion fails for text overlay images — broken display,High
+,TO-02,Converted image preserves portrait orientation,Checks OriginalHeight > OriginalWidth,"Queries API image record. Asserts height > width.",text-over-image.heic,Portrait (height > width),Orientation lost during HEIC→JPEG conversion,High
+,TO-03,All size tiers maintain portrait aspect ratio,Verifies height >= width at every tier,"Queries !sizedetails. Asserts height >= width for all non-original tiers.",text-over-image.heic,All tiers portrait,Some tiers lose orientation,High
+,TO-04,Text sharpness preserved in converted L tier,Downloads L tier and measures Laplacian variance (threshold > 500),"Downloads L tier. Converts to greyscale. Computes Laplacian variance.",text-over-image.heic,Variance ~2445 (threshold > 500),Text blurred during conversion — screenshots/documents unreadable,High
+,TO-05,Archived original is downloadable and valid,Compares ArchivedSize and downloaded byte count against source,"Reads ArchivedSize from API. Downloads ArchivedUri. Asserts size matches.",text-over-image.heic,ArchivedSize matches source (8538127 bytes),Original HEIC corrupted or inaccessible,High
+,,,,,,,,
+Watermark (API),,,,,,,,
+,WM-01,Watermark present on visitor-facing tiers [VISITOR],Enables watermark then compares owner vs visitor tier MD5,"Enables Watermark on album. Downloads L tier as owner (clean). Downloads same tier as visitor. Compares MD5. Asserts they differ.",c-watermark-test.jpg,Owner and visitor MD5 differ,Watermarks silently stopped being applied — no protection,High
+,WM-02,Owner download has no watermark (MD5 matches source),Downloads ArchivedUri as owner and compares MD5 against source,"Downloads archived original. Computes MD5. Compares against source file MD5.",c-watermark-test.jpg,MD5 exact match with source,Watermark permanently burned into original — master copy destroyed,High
+,WM-03,Archived original has no watermark,Checks ArchivedSize matches source file byte count,"Reads ArchivedSize from API. Compares against source byte count.",c-watermark-test.jpg,ArchivedSize = source bytes,Original file modified during storage,High
+,WM-04,Watermark applied at both small and large sizes [VISITOR],Downloads small and large tiers as owner and visitor and verifies both differ,"Enables watermark. Downloads Th/S and L/XL as owner and visitor. Compares MD5 for each size.",c-watermark-test.jpg,Both small and large visitor tiers differ from owner,Watermark only at certain sizes — bypass possible,High
+,WM-05,All tiers have watermark applied [VISITOR],Downloads every tier as owner and visitor and counts watermarked tiers,"Enables watermark. For each non-original tier: downloads as owner and visitor, compares MD5. Asserts at least some differ.",c-watermark-test.jpg,Multiple tiers watermarked,Specific tiers missing watermarks — bypass path exists,High
+,,,,,,,,
+Point of Interest (API) — DISABLED,,,,,,,,
+,POI-01–05,Point of Interest tests (disabled),!pointofinterest API returns null for all images,"All 5 POI tests disabled. The API endpoint returns null regardless of image content. POI cannot be set via API (PATCH silently ignored, PUT/POST return 405). Needs UI automation or face detection feature enabled.",c-poi-test.jpg,N/A — tests disabled,N/A,N/A
