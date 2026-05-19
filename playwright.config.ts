@@ -25,7 +25,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   workers: 1,
-  reporter: [["html"], ["list"]],
+  reporter: [["html"], ["list"], ["./reporters/custom-html-reporter.ts"]],
   timeout: 180_000, // 3 min per test — uploads, CDN propagation, and tier generation can be slow
 
   use: {

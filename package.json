@@ -11,7 +11,8 @@
     "test:inside:smugmug": "ENVIRONMENT=inside pnpm exec playwright test --project=smugmug-api-tests --project=smugmug-ui-tests",
     "test:production:smugmug": "ENVIRONMENT=production pnpm exec playwright test --project=smugmug-api-tests --project=smugmug-ui-tests",
     "test:update": "pnpm exec playwright test --update-snapshots",
-    "test:report": "pnpm exec playwright show-report"
+    "test:report": "pnpm exec playwright show-report",
+    "test:report:custom": "open test-results/custom-report.html"
   },
   "keywords": [],
   "author": "",
