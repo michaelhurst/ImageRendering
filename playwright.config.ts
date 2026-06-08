@@ -83,6 +83,7 @@ export default defineConfig({
         "api-watermark.spec.ts",
         "api-resolution-cap.spec.ts",
         "api-text-overlay.spec.ts",
+        "api-cmyk-watermark.spec.ts",
       ],
       use: { ...devices["Desktop Chrome"] },
     },
