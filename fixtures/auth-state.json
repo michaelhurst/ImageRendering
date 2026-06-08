@@ -2,20 +2,20 @@
   "cookies": [
     {
       "name": "ae",
-      "value": "1778624065",
+      "value": "1781041882",
       "domain": ".smugmug.net",
       "path": "/",
-      "expires": 1778624066.074932,
+      "expires": 1781041883.159428,
       "httpOnly": false,
       "secure": true,
       "sameSite": "None"
     },
     {
       "name": "ah",
-      "value": "ac3ad359cd821a1aedf166aa4c50bf2286cce09faca5c50c8dccdee3d857472d",
+      "value": "321e8317d9140b5a05b625636890f1b374293fce492068fceab70fa13134caeb",
       "domain": ".smugmug.net",
       "path": "/",
-      "expires": 1778624066.075371,
+      "expires": 1781041883.159628,
       "httpOnly": false,
       "secure": true,
       "sameSite": "None"
@@ -25,27 +25,27 @@
       "value": "40034",
       "domain": ".smugmug.net",
       "path": "/",
-      "expires": 1778624066.075383,
+      "expires": 1781041883.159651,
       "httpOnly": false,
       "secure": true,
       "sameSite": "None"
     },
     {
       "name": "__Secure-mercury-inside",
-      "value": "kCIUWdDmg0oLSProIBmcG3mNoKiYF1prRzaSS%2Ff406w%3D.eyJhbGdvcml0aG0iOiJzaGExIiwic2lnbmF0dXJlIjoiTkdKaE9UYzFabVUyTnpJM05XVm1NVEl4TVRFME9EQTRaVGRtWXpCak5qRTJPR1UxWTJOaU53PT0iLCJzdHJpbmciOiJrQ0lVV2REbWcwb0xTUHJvSUJtY0czbU5vS2lZRjFwclJ6YVNTL2Y0MDZ3PSIsInRpbWUiOjE3Nzg1Mzc2NjcsInZlcnNpb24iOjF9",
+      "value": "%2Bh9pVnjER%2BWpU7sAEdyrrqCeBiiwlYDNlOR7jq7mMQg%3D.eyJhbGdvcml0aG0iOiJzaGExIiwic2lnbmF0dXJlIjoiTXpNeVlXVTROVE5pTnpBNU16RTBNalE1TWpnM05UUXdNekF3WmpKbE9ERTNORFU1WTJVMlpnPT0iLCJzdHJpbmciOiIraDlwVm5qRVIrV3BVN3NBRWR5cnJxQ2VCaWl3bFlETmxPUjdqcTdtTVFnPSIsInRpbWUiOjE3ODA5NTU0ODQsInZlcnNpb24iOjF9",
       "domain": ".smugmug.net",
       "path": "/",
-      "expires": 1779747266.584745,
+      "expires": 1782165084.454501,
       "httpOnly": true,
       "secure": true,
       "sameSite": "Lax"
     },
     {
       "name": "sp",
-      "value": "810f89b2-2a52-49c6-87d1-fd24e83884ff",
+      "value": "3ff7e44d-a0ed-43aa-b12e-040b4560a369",
       "domain": ".smugmug.net",
       "path": "/",
-      "expires": 1810073666.840904,
+      "expires": 1812491485.050305,
       "httpOnly": false,
       "secure": true,
       "sameSite": "None"
@@ -65,27 +65,37 @@
       "value": "*",
       "domain": ".smugmug.net",
       "path": "/",
-      "expires": 1778539472,
+      "expires": 1780957286,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_sp_id.605c",
+      "value": "4250c14b-3e73-40fc-85dc-332d91adc999.1780955486.1.1780955486..6ee5a83d-c91d-4e19-934e-227d8cbae037..94b9b215-3450-420f-a649-c273c088a1f5.1780955486107.1",
+      "domain": ".smugmug.net",
+      "path": "/",
+      "expires": 1815515486.127598,
       "httpOnly": false,
       "secure": true,
       "sameSite": "Lax"
     },
     {
       "name": "g_state",
-      "value": "{\"i_l\":0,\"i_ll\":1778537667591,\"i_b\":\"RMUI3po66Q6O7KFrWBjQ/K5uuuSFWKkwR2/C3JBr/rc\",\"i_e\":{\"enable_itp_optimization\":19},\"i_et\":1778537667591}",
+      "value": "{\"i_l\":0,\"i_ll\":1780955486355,\"i_b\":\"BWj0tlihE1bpwpPrFEoHcmKg0+s1td4MRKMRR1mRjjQ\",\"i_e\":{\"enable_itp_optimization\":0},\"i_et\":1780955486355}",
       "domain": "inside.smugmug.net",
       "path": "/",
-      "expires": 1794089667,
+      "expires": 1796507486,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
     },
     {
       "name": "sp",
-      "value": "810f89b2-2a52-49c6-87d1-fd24e83884ff",
+      "value": "3ff7e44d-a0ed-43aa-b12e-040b4560a369",
       "domain": "stats-new.smugmug.net",
       "path": "/",
-      "expires": 1810073672.804005,
+      "expires": 1812491486.625794,
       "httpOnly": false,
       "secure": true,
       "sameSite": "None"
@@ -95,7 +105,7 @@
       "value": "https%3A%2F%2Finside.smugmug.net%2Fauth%2Flogin",
       "domain": ".smugmug.net",
       "path": "/",
-      "expires": 1781129668.238792,
+      "expires": 1783547487.097798,
       "httpOnly": true,
       "secure": true,
       "sameSite": "None"
@@ -105,24 +115,24 @@
       "value": "%7B%22hli%22%3Atrue%7D",
       "domain": ".smugmug.net",
       "path": "/",
-      "expires": 1810073668.342592,
+      "expires": 1812491488.074622,
       "httpOnly": true,
       "secure": true,
       "sameSite": "None"
     },
     {
       "name": "shm",
-      "value": "%7B%22l%22%3A%22ae27c5fc4c492d2b4d0f418e9d6dc849%22%2C%22t%22%3A%22afdff8aa01eb22e8da58b03e11c53adc27fb9c3c%22%7D",
+      "value": "%7B%22l%22%3A%22ae27c5fc4c492d2b4d0f418e9d6dc849%22%2C%22t%22%3A%2223d40221ab35daf971147878ed175aa999391d7e%22%7D",
       "domain": ".smugmug.net",
       "path": "/",
-      "expires": 1781216068.342633,
+      "expires": 1783633888.074659,
       "httpOnly": true,
       "secure": true,
       "sameSite": "None"
     },
     {
       "name": "SMSESS",
-      "value": "33b6c0d201523c241dd5840586397705",
+      "value": "eb5e5af1b1ba899ec0bb9860c9ab6a14",
       "domain": ".smugmug.net",
       "path": "/",
       "expires": -1,
@@ -132,7 +142,7 @@
     },
     {
       "name": "od",
-      "value": "%7B%22string%22%3A%22%7B%5C%22SN%5C%22%3A%5B%5C%22Automated-Render-Testing%5C%22%5D%2C%5C%22V%5C%22%3A1%7D%22%2C%22time%22%3A1778537671%2C%22signature%22%3A%22MTI1MzNjNTMwOGI1ZGEyN2MyMzdhYTEzYjdiZWQ2YzdlOWQzZDkyYw%3D%3D%22%2C%22version%22%3A1%2C%22algorithm%22%3A%22sha1%22%7D",
+      "value": "%7B%22string%22%3A%22%7B%5C%22SN%5C%22%3A%5B%5C%22Automated-Render-Testing%5C%22%5D%2C%5C%22V%5C%22%3A1%7D%22%2C%22time%22%3A1780955490%2C%22signature%22%3A%22MGFmYzY5ZGJmYWI4MzNiZDlmOWMwYjUwZGQ1ZDgxYWY2Zjg2NTI1Yg%3D%3D%22%2C%22version%22%3A1%2C%22algorithm%22%3A%22sha1%22%7D",
       "domain": ".smugmug.net",
       "path": "/",
       "expires": -1,
@@ -145,29 +155,19 @@
       "value": "mrasn=&lp=https%253A%252F%252Finside.smugmug.net%252Fapp%252Fdashboard",
       "domain": ".smugmug.net",
       "path": "/",
-      "expires": 1778539472,
+      "expires": 1780957292,
       "httpOnly": false,
       "secure": false,
       "sameSite": "Lax"
     },
     {
       "name": "ABTasty",
-      "value": "uid=gp5p4mpf1ahwmm45&fst=1778537672463&pst=-1&cst=1778537672463&ns=1&pvt=1&pvis=1&th=",
+      "value": "uid=gap3ydd1pn2m0v9y&fst=1780955492291&pst=-1&cst=1780955492291&ns=1&pvt=1&pvis=1&th=",
       "domain": ".smugmug.net",
       "path": "/",
-      "expires": 1812752072,
+      "expires": 1815083492,
       "httpOnly": false,
       "secure": false,
-      "sameSite": "Lax"
-    },
-    {
-      "name": "_sp_id.605c",
-      "value": "30c57b89-5588-4a31-8df4-05f15c6db5e3.1778537667.1.1778537673..46e92a11-ebcf-4ddb-ab3b-6871ef2be46e..a046afe1-1450-4afa-9346-8890264dfc63.1778537667436.5",
-      "domain": ".smugmug.net",
-      "path": "/",
-      "expires": 1813097672.524919,
-      "httpOnly": false,
-      "secure": true,
       "sameSite": "Lax"
     }
   ],
@@ -177,15 +177,11 @@
       "localStorage": [
         {
           "name": "ABTastyData",
-          "value": "{\"VisitedPages\":[{\"url\":\"https://inside.smugmug.net/app/dashboard\",\"visite\":1,\"time\":1778537672463,\"title\":\"Dashboard - SmugMug\"}]}"
+          "value": "{\"VisitedPages\":[{\"url\":\"https://inside.smugmug.net/app/dashboard\",\"visite\":1,\"time\":1780955492291,\"title\":\"Dashboard - SmugMug\"}]}"
         },
         {
           "name": "snowplowOutQueue_mercury-sp",
           "value": "[]"
-        },
-        {
-          "name": "_gcl_ls",
-          "value": "{\"schema\":\"gcl\",\"version\":1,\"gtg_load_status\":{\"status\":2,\"expires\":1778624073237}}"
         }
       ]
     }
