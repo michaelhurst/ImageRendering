@@ -199,6 +199,16 @@ export class GalleryImages {
       });
 
       if (!res.ok()) {
+        // Handle ghost/deleted image references that cause 404 on the listing.
+        // The SmugMug API returns 404 when a referenced image no longer exists.
+        // Skip past it by advancing start and retrying.
+        if (res.status() === 404 && start < (total === Infinity ? 100 : total)) {
+          console.warn(
+            `[gallery] 404 at start=${start}, skipping to start=${start + 1}`,
+          );
+          start += 1;
+          continue;
+        }
         throw new Error(
           `Failed to list album images: ${res.status()} ${await res.text()}`,
         );
