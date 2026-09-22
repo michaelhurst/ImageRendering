@@ -789,9 +789,17 @@ export class SmugMugAPI {
         // rendering inline. Handle both cases: normal response or download event.
         try {
           const [response] = await Promise.all([
-            dlPage.waitForResponse((r) => r.url().includes(filename), {
-              timeout: 60_000,
-            }),
+            // Skip 3xx redirect responses: watermarked/protected tiers 302 to
+            // a signed CDN URL, and calling .body() on the redirect throws
+            // "Response body is unavailable for redirect responses". Match the
+            // final response that actually carries the image bytes.
+            dlPage.waitForResponse(
+              (r) => {
+                const s = r.status();
+                return r.url().includes(filename) && (s < 300 || s >= 400);
+              },
+              { timeout: 60_000 },
+            ),
             dlPage.goto(url, { waitUntil: "commit", timeout: 60_000 }),
           ]);
           const body = Buffer.from(await response.body());

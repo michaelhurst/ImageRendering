@@ -8,7 +8,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { chromium } from "@playwright/test";
-import { loginAndSaveState, getAuthStatePath } from "./auth";
+import { loginAndSaveState, getAuthStatePath, isAuthSessionValid } from "./auth";
 
 const RUN_FOLDER_STATE_PATH = path.resolve(
   __dirname,
@@ -22,10 +22,16 @@ export default async function globalSetup() {
     console.log("[global-setup] Cleared previous run folder state.");
   }
 
-  // Ensure we have a valid login session
+  // Ensure we have a valid login session. Re-login not only when the state is
+  // absent, but also when it is stale/expired — a restored-but-dead session
+  // reads fine yet fails every write with a misleading 404.
   const authStatePath = getAuthStatePath();
-  if (!fs.existsSync(authStatePath)) {
-    console.log("[global-setup] No auth state found — logging in...");
+  if (!isAuthSessionValid(authStatePath)) {
+    console.log(
+      fs.existsSync(authStatePath)
+        ? "[global-setup] Auth state is stale/expired — logging in again..."
+        : "[global-setup] No auth state found — logging in...",
+    );
     const browser = await chromium.launch();
     const context = await browser.newContext({
       httpCredentials:

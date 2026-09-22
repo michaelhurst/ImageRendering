@@ -5,7 +5,7 @@
  *   - `api`: A SmugMugAPI instance authenticated via browser session
  *   - `imageCompare`: Quick access to image-comparison helpers
  *   - `testAlbumKey`: The album key for uploading test images
- *   - `testNickname`: The test account nickname (`automated-render-testing`)
+ *   - `testNickname`: The test account nickname (`Automated-Render-Testing`)
  *   - `baselineGalleryUrl`: The SmugMug gallery URL for baseline images (environment-aware)
  *
  * Architecture:
@@ -24,7 +24,11 @@
 
 import { test as base, expect } from "@playwright/test";
 import { SmugMugAPI } from "./smugmug-api";
-import { loginAndSaveState, getAuthStatePath } from "./auth";
+import {
+  loginAndSaveState,
+  getAuthStatePath,
+  isAuthSessionValid,
+} from "./auth";
 import * as imageCompare from "./image-comparison";
 import * as exifUtils from "./exif-utils";
 import * as fs from "fs";
@@ -69,6 +73,8 @@ function saveRunFolderState(state: RunFolderState): void {
   fs.writeFileSync(RUN_FOLDER_STATE_PATH, JSON.stringify(state, null, 2));
 }
 
+
+
 // ---------------------------------------------------------------------------
 // In-memory caches (shared within a single worker process)
 // ---------------------------------------------------------------------------
@@ -99,10 +105,19 @@ type ImageDisplayFixtures = {
 
 export const test = base.extend<ImageDisplayFixtures>({
   api: async ({ page }, use) => {
-    // Log in if we don't have a saved session
+    // Log in if we don't have a saved session — OR if the saved session has
+    // gone stale. The saved cookies authorize WRITES (folder/album creation,
+    // uploads); the API key + HTTP Basic Auth only cover reads. When the auth
+    // cookies expire, GETs keep working but writes fail with a confusing 404,
+    // so we must detect expiry up front and re-login rather than restore a
+    // dead session.
     const authStatePath = getAuthStatePath();
-    if (!fs.existsSync(authStatePath)) {
-      console.log("[auth] No saved session found — logging in...");
+    if (!isAuthSessionValid(authStatePath)) {
+      console.log(
+        fs.existsSync(authStatePath)
+          ? "[auth] Saved session is stale/expired — logging in again..."
+          : "[auth] No saved session found — logging in...",
+      );
       await loginAndSaveState(page);
       console.log("[auth] Login complete, session saved.");
     } else {
@@ -177,7 +192,11 @@ export const test = base.extend<ImageDisplayFixtures>({
   },
 
   testNickname: async ({}, use) => {
-    await use("automated-render-testing");
+    // SmugMug canonicalizes the nickname casing. The account's real nickname
+    // is "Automated-Render-Testing"; requesting the lowercase form returns a
+    // 301 on GETs and a 404 on writes (e.g. folder creation). Use the exact
+    // canonical casing so write endpoints resolve.
+    await use("Automated-Render-Testing");
   },
 
   baselineGalleryUrl: async ({}, use) => {

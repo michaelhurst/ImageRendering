@@ -8,9 +8,59 @@
  */
 
 import { type Page, type BrowserContext } from "@playwright/test";
+import * as fs from "fs";
 import * as path from "path";
 
 const AUTH_STATE_PATH = path.resolve(__dirname, "../fixtures/auth-state.json");
+
+// The cookies that actually authorize write operations for the SmugMug
+// session (folder/album creation, uploads, metadata PATCHes). The API key and
+// HTTP Basic Auth only cover reads, so if any of these is missing or expired,
+// a restored session can read but not write — surfacing as a confusing 404 on
+// the first write. Treat such a session as invalid and re-login.
+const REQUIRED_AUTH_COOKIES = ["ae", "ah", "au", "__Secure-mercury-inside"];
+
+/**
+ * Returns true only if a saved auth state exists, still contains all the
+ * essential session cookies, and none of them has expired. Persistent cookies
+ * with an `expires` timestamp in the past are treated as dead; session cookies
+ * (expires <= 0) are accepted since their lifetime isn't encoded in the state.
+ */
+export function isAuthSessionValid(
+  authStatePath: string = AUTH_STATE_PATH,
+): boolean {
+  try {
+    if (!fs.existsSync(authStatePath)) return false;
+    const state = JSON.parse(fs.readFileSync(authStatePath, "utf8"));
+    const cookies: Array<{ name: string; expires?: number }> =
+      state.cookies || [];
+    const nowSec = Date.now() / 1000;
+    const byName = new Map(cookies.map((c) => [c.name, c]));
+
+    for (const name of REQUIRED_AUTH_COOKIES) {
+      const cookie = byName.get(name);
+      if (!cookie) {
+        console.log(`[auth] Session check: required cookie "${name}" missing.`);
+        return false;
+      }
+      if (
+        typeof cookie.expires === "number" &&
+        cookie.expires > 0 &&
+        cookie.expires < nowSec
+      ) {
+        console.log(
+          `[auth] Session check: cookie "${name}" expired at ` +
+            `${new Date(cookie.expires * 1000).toISOString()}.`,
+        );
+        return false;
+      }
+    }
+    return true;
+  } catch (err: any) {
+    console.log(`[auth] Session check failed to parse state: ${err.message}`);
+    return false;
+  }
+}
 
 /**
  * Log into SmugMug and save the session state for reuse.

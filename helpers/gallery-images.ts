@@ -141,9 +141,11 @@ export class GalleryImages {
     const ctx = await this.getContext();
     const config = GALLERY_CONFIG[this.env];
 
-    // Look up the Baseline-Images album under the user's root
+    // Look up the Baseline-Images album under the user's root.
+    // Use the canonical nickname casing "Automated-Render-Testing" — the
+    // lowercase form triggers a 301 redirect that can drop auth/break writes.
     const albumsUrl = this.appendApiKey(
-      `${config.apiBase}/api/v2/folder/user/automated-render-testing!albums`,
+      `${config.apiBase}/api/v2/folder/user/Automated-Render-Testing!albums`,
     );
     const albumsRes = await ctx.get(albumsUrl, {
       headers: { Accept: "application/json" },
