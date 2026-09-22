@@ -1,5 +1,6 @@
 node_modules/
 .env
+fixtures/auth-state.json
 tests/baselines/
 tests/image-render.spec.js-snapshots/
 playwright-report/
