@@ -38,7 +38,7 @@ test.describe("MP (API): Metadata Preservation", () => {
       _sourceExif =
         (await exifr.parse(fs.readFileSync(RICH_PATH), { all: true })) || {};
     }
-    return { key: _richKey, sourceExif: _sourceExif };
+    return { key: _richKey, sourceExif: _sourceExif ?? {} };
   }
 
   async function ensureIptcUploaded(
