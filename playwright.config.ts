@@ -1,7 +1,10 @@
+import * as path from "path";
 import { defineConfig, devices } from "@playwright/test";
 import * as dotenv from "dotenv";
 
-dotenv.config();
+// Load .env from this config's directory, not the current working directory,
+// so `ENVIRONMENT` resolves regardless of where playwright is invoked from.
+dotenv.config({ path: path.resolve(__dirname, ".env") });
 
 const ENVIRONMENT = process.env.ENVIRONMENT;
 if (!ENVIRONMENT || !["inside", "production"].includes(ENVIRONMENT)) {
