@@ -108,7 +108,7 @@ class CustomHtmlReporter implements Reporter {
 
   private getSuitePath(test: TestCase): string {
     const parts: string[] = [];
-    let parent = test.parent;
+    let parent: Suite | undefined = test.parent;
     while (parent) {
       if (parent.title && !parent.project()) {
         parts.unshift(parent.title);

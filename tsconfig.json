@@ -11,6 +11,12 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["helpers/**/*.ts", "tests/**/*.ts"],
+  "include": [
+    "helpers/**/*.ts",
+    "tests/**/*.ts",
+    "reporters/**/*.ts",
+    "scripts/**/*.ts",
+    "playwright.config.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }
